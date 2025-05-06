@@ -1,5 +1,4 @@
 import axios from './axiosInstance';
-import router from "@/router/index.js";
 
 //GET
 export const apiGetUser = () => {

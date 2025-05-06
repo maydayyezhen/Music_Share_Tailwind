@@ -75,7 +75,7 @@ async function handleSubmit() {
                 </g>
               </svg>
               <input
-                  type="input"
+                  type="text"
                   v-model="username"
                   required
                   placeholder="用户名"

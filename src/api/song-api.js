@@ -1,8 +1,6 @@
 import axios from './axiosInstance';
-import {apiGetFileUrl} from "@/api/file-api.js";
 import {apiGetCoverFileUrl} from "@/api/album-api.js";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 //GET
 //获取所有歌曲

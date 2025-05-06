@@ -1,12 +1,11 @@
 <script setup>
 import SongList from "@/components/SongList.vue";
-import {onMounted, onUnmounted, ref, watch} from "vue";
+import {onMounted, ref, watch} from "vue";
 import {
   apiGetAllSongs,
 } from "@/api/song-api.js";
 import {Song} from "@/models/song.js";
 import {useAuthStore} from "@/stores/authStore.js";
-import {apiGetCoverFileUrl} from "@/api/album-api.js";
 const authStore = useAuthStore();
 const songs = ref([{...Song}]);
 

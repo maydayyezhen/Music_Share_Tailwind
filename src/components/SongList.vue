@@ -1,31 +1,13 @@
 <script setup>
-import {computed, ref, watch} from "vue";
+import { ref, watch} from "vue";
 import {useMusicStore} from "@/stores/musicStore.js";
-import {
-  apiDeleteAudioFileBySongId,
-  apiDeleteLrcFileBySongId,
-  apiDeleteSongById,
-  apiUpdateSong
-} from "@/api/song-api.js";
-import router from "@/router/index.js";
-import {useAuthStore} from "@/stores/authStore.js";
 import {apiGetCoverFileUrl} from "@/api/album-api.js";
 
 const props = defineProps(['songs']);
-const editingSong = ref(null);//用于存储被编辑歌曲的数据
 const currentMusic = useMusicStore();
-const authStore = useAuthStore();
 const emit = defineEmits(["reloadSongs"]);
-const songs = ref([])
 const isSongModalVisible = ref(false)
-const selectedSong = ref(null) // 当前要编辑的歌曲
 const coverUrls = ref({});
-
-
-const openAddSongModal = () => {
-  selectedSong.value = null
-  isSongModalVisible.value = true
-}
 
 const urlMap = ref({})
 

@@ -167,7 +167,7 @@ onMounted(getAllArtists);
     }
   },
 
-  { key: 'description', label: '简介',displayComponent:'LongTextEditor', editComponent: 'LongTextEditor',buttonText: '简介', title: '简介',},
+  { key: 'description', label: '简介',displayComponent:'LongTextEditor', editComponent: 'LongTextEditor',buttonText: '简介', title: '简介'},
 
   { key: 'releaseDate', label: '发行日期', editComponent: 'input-date' }
 ]"

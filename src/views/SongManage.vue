@@ -231,7 +231,7 @@ onMounted(getAllArtists);
   { key: 'audio', label: '音频',  displayComponent: 'MiniAudioPlayer',editComponent: 'AudioUpload' },
   { key: 'audioUrl', hidden: true},
   { key: 'lyricUrl', hidden: true},
-  { key: 'lyrics', label: '歌词', displayComponent: 'LongTextEditor', editComponent: 'LongTextEditor',buttonText: '歌词', title: '歌词',}]"
+  { key: 'lyrics', label: '歌词', displayComponent: 'LongTextEditor', editComponent: 'LongTextEditor',buttonText: '歌词', title: '歌词'}]"
       @update="handleUpdateDataAndUploadFiles"
       @add="handleAddDataAndUploadFiles"
       @delete="handleDeleteData"

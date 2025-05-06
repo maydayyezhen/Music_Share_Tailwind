@@ -1,5 +1,4 @@
 import axios from './axiosInstance';
-import {apiGetFileUrl} from "@/api/file-api.js";
 
 
 //GET

@@ -1,12 +1,6 @@
 <script setup>
 import NavBar from "@/components/NavBar.vue";
-import MusicList from "@/components/SongList.vue";
-import Login from "@/views/Login.vue";
-import Register from "@/views/Register.vue";
-import Song from "@/components/Song.vue";
-import Artist from "@/components/Artist.vue";
-import Album from "@/components/Album.vue";
-import {onMounted, onUnmounted, provide, ref} from "vue";
+import {onMounted, onUnmounted} from "vue";
 import {useAuthStore} from "@/stores/authStore.js";
 import BarPlayer from "@/components/BarPlayer.vue";
 const authStore = useAuthStore();
