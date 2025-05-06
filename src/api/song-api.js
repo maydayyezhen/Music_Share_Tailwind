@@ -7,6 +7,7 @@ import {apiGetCoverFileUrl} from "@/api/album-api.js";
 export const apiGetAllSongs = () => {
     return axios.get(`/songs`);
 };
+
 //通过歌手ID获取歌曲
 export const apiGetSongsByArtistId = (id) => {
     return axios.get(`/songs/artist/${id}`);
