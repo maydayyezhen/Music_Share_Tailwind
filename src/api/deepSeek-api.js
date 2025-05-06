@@ -1,5 +1,3 @@
-import axios from 'axios';
-
 // API常量
 const apiKey = 'sk-0ff7eb791fa946e0afb8c61179a21eb3'; // 替换成你的API Key
 const apiUrl = 'https://api.deepseek.com/v1/chat/completions'; // 确认API地址
