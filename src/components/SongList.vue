@@ -2,6 +2,7 @@
 import { ref, watch} from "vue";
 import {useMusicStore} from "@/stores/musicStore.js";
 import {apiGetCoverFileUrl} from "@/api/album-api.js";
+import router from "@/router/index.js";
 
 const props = defineProps(['songs']);
 const currentMusic = useMusicStore();
@@ -54,7 +55,7 @@ const liked = ref(false)
     <li class="list-row" v-for="(song, index) in props.songs" :key="index">
       <div><img v-if="coverUrls[index]" class="size-10 rounded-box" :src=coverUrls[index] alt=""/></div>
       <div>
-        <div>{{song.title}}</div>
+        <div @click="router.push(`/song_detail/${song.id}`)">{{song.title}}</div>
         <div class="text-xs uppercase font-semibold opacity-60">{{song.artist.name}}</div>
       </div>
       <button class="btn btn-square btn-ghost" @click="togglePlayPause(song)">

@@ -94,7 +94,7 @@ onBeforeUnmount(() => {
       </svg>
     </div>
 
-    <ul class="dropdown-content mt-3 z-[1] menu p-2 shadow bg-base-100 rounded-box w-64 max-h-80 overflow-y-auto">
+    <ul class="dropdown-content mt-3 z-[1]  p-2 shadow bg-base-100 rounded-box w-64 max-h-80 overflow-y-auto">
       <li v-for="item in filteredItems" :key="getLabel(item)">
         <button
             class="flex items-center gap-3 p-2 rounded-box hover:bg-base-200 w-full text-left"

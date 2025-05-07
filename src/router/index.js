@@ -5,6 +5,7 @@ import MusicDB from "@/views/MusicDB.vue";
 import ArtistManage from "@/views/ArtistManage.vue";
 import AlbumManage from "@/views/AlbumManage.vue";
 import SongManage from "@/views/SongManage.vue";
+import SongDetail from "@/views/SongDetail.vue";
 
 
 const routes = [
@@ -15,6 +16,7 @@ const routes = [
     { path: '/music_manage', component: ArtistManage },
     { path: '/album_manage', component: AlbumManage },
     { path: '/song_manage', component: SongManage },
+    { path: "/song_detail/:id", component: SongDetail},
 ]
 
 const router = createRouter({
