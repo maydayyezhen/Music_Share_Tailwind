@@ -1,15 +1,15 @@
 <script setup>
 import MyTable from "@/components/MyTable.vue";
 import {onMounted, ref} from "vue";
-import {apiGetAllAlbums, apiGetCoverFileUrl,} from "@/api/album-api.js";
+import {apiGetAlbums, apiGetAllAlbums, apiGetCover,} from "@/api/album-api.js";
 import {apiGetAllArtists, apiGetArtistAvatarFileUrl} from "@/api/artist-api.js";
 import Alerts from "@/components/Alerts.vue";
 import {
   apiCreateSong,
   apiDeleteSongById,
   apiGetAllSongs,
-  apiGetAudioFileUrl,
-  apiGetSongById,
+  apiGetAudio,
+  apiGetSongById, apiGetSongs,
   apiUpdateSong,
   apiUploadAudioFile,
   apiUploadLrcFile
@@ -32,18 +32,22 @@ const getAllAlbums = async () => {
   const response = await apiGetAllAlbums()
   albums.value = response.data
   await Promise.all(albums.value.map(async (album) => {
-    album.cover = await apiGetCoverFileUrl(album.coverUrl);
+    album.cover = await apiGetCover(album.coverUrl);
   }));
 }
 
 const songs = ref([])
-const getAllSongs = async () => {
-  const response = await apiGetAllSongs();
+const sortBy = ref('id')        // 默认按哪个字段排序
+const sortOrder = ref('asc')      // 默认排序方向
+const getSongs = async (page=0, size=5,keyword='',sortByField='id',sortOrderDirection='asc') => {
+  sortBy.value = sortByField
+  sortOrder.value = sortOrderDirection
+  const response = await apiGetSongs(page, size, keyword,sortByField,sortOrderDirection);
   songs.value = response.data;
-  await Promise.all(songs.value.map(async (song) => {
-    song.album.cover = await apiGetCoverFileUrl(song.album.coverUrl);
+  await Promise.all(songs.value.content.map(async (song) => {
+    song.album.cover = await apiGetCover(song.album.coverUrl);
     song.artist.avatar = await apiGetArtistAvatarFileUrl(song.artist.avatarUrl);
-    song.audio = await apiGetAudioFileUrl(song.audioUrl);
+    song.audio = await apiGetAudio(song.audioUrl);
   }));
 }
 
@@ -62,6 +66,7 @@ function getAudioDuration(file) {
 
 // 更新数据时调用
 async function handleUpdateDataAndUploadFiles({ updatedRow, files }) {
+  debugger
   try {
     const audioFile = files['audio']; // 假设文件对象中的 audio 对应上传的音频文件
     if (audioFile) {
@@ -85,12 +90,12 @@ async function handleUpdateDataAndUploadFiles({ updatedRow, files }) {
 
     // 获取更新后的数据
     const updatedSong = (await apiGetSongById(updatedRow.id)).data;
-    updatedSong.album.cover = await apiGetCoverFileUrl(updatedSong.album.coverUrl);
+    updatedSong.album.cover = await apiGetCover(updatedSong.album.coverUrl);
     updatedSong.artist.avatar = await apiGetArtistAvatarFileUrl(updatedSong.artist.avatarUrl);
-    updatedSong.audio = await apiGetAudioFileUrl(updatedSong.audioUrl);
-    const index = songs.value.findIndex(song => song.id === updatedSong.id);
+    updatedSong.audio = await apiGetAudio(updatedSong.audioUrl);
+    const index = songs.value.content.findIndex(song => song.id === updatedSong.id);
     if (index !== -1) {
-      songs.value[index] = updatedSong;
+      songs.value.content[index] = updatedSong;
     }
 
     triggerToast('success', '更新成功')
@@ -128,10 +133,10 @@ async function handleAddDataAndUploadFiles({ newRow, files, onSuccess}) {
 
     // 获取更新后的数据
     const newSong = (await apiGetSongById(id)).data;
-    newSong.album.cover = await apiGetCoverFileUrl(newSong.album.coverUrl);
+    newSong.album.cover = await apiGetCover(newSong.album.coverUrl);
     newSong.artist.avatar = await apiGetArtistAvatarFileUrl(newSong.artist.avatarUrl);
-    newSong.audio = await apiGetAudioFileUrl(newSong.audioUrl);
-    songs.value.push(newSong);
+    newSong.audio = await apiGetAudio(newSong.audioUrl);
+    songs.value.content.push(newSong);
     triggerToast('success', '更新成功')
     onSuccess();
   } catch (error) {
@@ -181,7 +186,7 @@ async function handleDeleteData(id) {
   }
 }
 
-onMounted(getAllSongs)
+onMounted(getSongs)
 onMounted(getAllAlbums);
 onMounted(getAllArtists);
 </script>
@@ -189,11 +194,28 @@ onMounted(getAllArtists);
 <template>
   <alerts ref="alertsRef" />
   <my-table
-      :modelValue="songs"
+      :modelValue="songs.content"
       :columns="[
-  { key: 'id', label: 'ID', readOnly: true },
+  { key: 'id', label: 'ID', readOnly: true ,sortable: true},
 
-  { key: 'title', label: '歌曲名',bold: true },
+  { key: 'title', label: '歌曲名',bold: true, sortable: true },
+
+   {
+    key: 'artist',
+    label: '音乐人',
+    displayComponent: [
+      { key: 'avatar', component: 'img'},
+      { key: 'name' }
+    ],
+    editComponent: 'MySelector',
+    props: {
+      items: artists,
+      getLabel: (item) => item.name,
+      getImage: (item) => item.avatar,
+      imageClass: 'object-cover rounded-full size-10'
+    },
+    sortable: true
+  },
 
   {
     key: 'album',
@@ -208,33 +230,22 @@ onMounted(getAllArtists);
       getLabel: (item) => item.title,
       getImage: (item) => item.cover,
       imageClass: 'size-10 object-cover rounded-box'
-    }
+    },
+    sortable: true
   },
-
-  {
-    key: 'artist',
-    label: '音乐人',
-    displayComponent: [
-      { key: 'avatar', component: 'img'},
-      { key: 'name' }
-    ],
-    editComponent: 'MySelector',
-    props: {
-      items: artists,
-      getLabel: (item) => item.name,
-      getImage: (item) => item.avatar,
-      imageClass: 'object-cover rounded-full size-10'
-    }
-  },
-
-  { key: 'duration', label: '时长',readOnly: true},
+  {key: 'trackNum',label: 'Track #'},
+  { key: 'duration', label: '时长',readOnly: true,sortable: true},
   { key: 'audio', label: '音频',  displayComponent: 'MiniAudioPlayer',editComponent: 'AudioUpload' },
   { key: 'audioUrl', hidden: true},
   { key: 'lyricUrl', hidden: true},
-  { key: 'lyrics', label: '歌词', displayComponent: 'LongTextEditor', editComponent: 'LongTextEditor',buttonText: '歌词', title: '歌词'}]"
+  { key: 'lyrics', label: '歌词', displayComponent: 'textarea', editComponent: 'textarea',buttonText: '歌词', title: '歌词'}]"
+      :pagination="songs.page"
+      :sort-by="sortBy"
+      :sort-order="sortOrder"
       @update="handleUpdateDataAndUploadFiles"
       @add="handleAddDataAndUploadFiles"
       @delete="handleDeleteData"
+      @query-change="getSongs"
   />
 </template>
 

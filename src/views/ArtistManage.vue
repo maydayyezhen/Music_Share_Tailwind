@@ -139,7 +139,7 @@ onMounted(getArtists);
 
   { key: 'name', label: '音乐人',bold:true,sortable: true},
 
-  { key: 'bio', label: '简介', displayComponent:'LongTextEditor', editComponent: 'LongTextEditor',buttonText: '简介', title: '简介'},
+  { key: 'bio', label: '简介', displayComponent:'editor', editComponent: 'editor',buttonText: '简介', title: '简介'},
 
 ]"
       :pagination="artists.page"

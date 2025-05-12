@@ -20,7 +20,7 @@ watch(
     { immediate: true }
 );
 
-
+//生成唯一的占位头像
 function createAvatarUrl() {
   const avatar = createAvatar(thumbs, {
     seed: authStore.user.username,
@@ -122,7 +122,7 @@ const themes = [
         <li><a>电台</a></li>
         <li><a>MV</a></li>
         <li><a>数字专辑</a></li>
-        <li><a>我的收藏</a></li>
+        <li><a @click="router.push('/user_likes')">我的收藏</a></li>
       </ul>
     </div>
 

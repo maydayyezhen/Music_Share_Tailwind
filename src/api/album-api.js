@@ -6,14 +6,20 @@ export const apiGetAllAlbums = () => {
     return axios.get(`/albums`);
 };
 
+export const apiGetAlbums = (page, size, keyword='', sortBy='', sortOrder='') => {
+    return axios.get(`/albums/paged?page=${page}&size=${size}&keyword=${keyword}&sortBy=${sortBy}&sortOrder=${sortOrder}`);
+}
+
 //根据歌手ID获取专辑
-export const apiGetAlbumsByArtistId = (id) => {
-    return axios.get(`/albums/artist/${id}`);
+export const apiGetAlbumsByArtistId = async (id) => {
+    const response = await axios.get(`/albums/artist/${id}`);
+    return response.data;
 }
 
 //根据专辑id获取专辑
-export const apiGetAlbumByAlbumId = (id) => {
-    return axios.get(`/albums/${id}`);
+export const apiGetAlbumById = async (id) => {
+    const response = await axios.get(`/albums/${id}`);
+    return response.data;
 }
 
 
@@ -47,7 +53,7 @@ export const apiDeleteCoverFileById = (id) => {
 }
 
 //获取封面URL
-export const apiGetCoverFileUrl = async (fileUrl) => {
+export const apiGetCover = async (fileUrl) => {
     if(!fileUrl) return null;
     const res = await axios.get(fileUrl, {
         responseType: 'blob',

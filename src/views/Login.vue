@@ -29,7 +29,7 @@ async function handleSubmit() {
       if (error.response && error.response.data) {
         triggerToast('error', error.response.data.token)
       } else {
-        triggerToast('error', '注册失败！未知错误')
+        triggerToast('error', '登录失败！未知错误')
       }
     }
   }

@@ -1,5 +1,4 @@
 import axios from './axiosInstance';
-import {apiGetCoverFileUrl} from "@/api/album-api.js";
 
 
 //GET
@@ -8,17 +7,23 @@ export const apiGetAllSongs = () => {
     return axios.get(`/songs`);
 };
 
+export const apiGetSongs = (page, size, keyword='', sortBy='', sortOrder='') => {
+    return axios.get(`/songs/paged?page=${page}&size=${size}&keyword=${keyword}&sortBy=${sortBy}&sortOrder=${sortOrder}`);
+}
+
 //通过歌手ID获取歌曲
-export const apiGetSongsByArtistId = (id) => {
-    return axios.get(`/songs/artist/${id}`);
+export const apiGetSongsByArtistId = async (id) => {
+    const response = await axios.get(`/songs/artist/${id}`);
+    return response.data;
 }
 //通过专辑ID获取歌曲
 export const apiGetSongsByAlbumId = (id) => {
     return axios.get(`/songs/album/${id}`);
 }
 //通过歌曲ID获取歌曲
-export const apiGetSongById = (id) => {
-    return axios.get(`/songs/${id}`);
+export const apiGetSongById = async (id) => {
+    const response = await axios.get(`/songs/${id}`);
+    return response.data;
 }
 
 //根据歌曲ID获取专辑
@@ -77,7 +82,7 @@ export const apiDeleteLrcFileBySongId = (id) => {
 
 //文件操作
 //获取音频URL
-export const apiGetAudioFileUrl = async (fileUrl) => {
+export const apiGetAudio = async (fileUrl) => {
     const res = await axios.get(fileUrl, {
         responseType: 'blob',
     })
@@ -92,12 +97,5 @@ export const apiGetLyric= async (fileUrl) => {
     return response.data;
 }
 
-//通过歌曲ID获取封面URL
-export const apiGetCoverFileUrlBySongId = async (id) => {
-    if (id === null)
-        return '';
-    const coverUrl = await axios.get(`/songs/${id}/coverUrl`);
-    return await apiGetCoverFileUrl(coverUrl.data);
-}
 
 

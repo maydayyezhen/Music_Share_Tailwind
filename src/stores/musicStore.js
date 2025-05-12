@@ -1,26 +1,21 @@
 import { defineStore } from 'pinia';
-import { ref } from 'vue';
+import {nextTick, ref} from 'vue';
 import {Song} from "@/models/song.js";
 
 export const useMusicStore = defineStore('music', () => {
     const currentSongIndex = ref(0);
     const currentPlaylist = ref([]);
-    const currentAlbumUrlList = ref([]);
     const currentSong = ref({...Song});
     const audio = ref(null);
     const isPlaying = ref(false);
-    const currentSongCoverUrl = ref(null);
 
     const setCurrentPlayList = (playlist) => {
-        currentPlaylist.value = JSON.parse(JSON.stringify(playlist))
-    }
-    const setCurrentAlbumUrlList = (urlList) => {
-        currentAlbumUrlList.value = urlList;
+        currentPlaylist.value = playlist
     }
     const setCurrentSong = (index) => {
         currentSongIndex.value = index;
         currentSong.value = currentPlaylist.value[index];
-        currentSongCoverUrl.value = currentAlbumUrlList.value[index];
+        play();
     }
 
     const setAudio = (audioElement) => {
@@ -29,8 +24,10 @@ export const useMusicStore = defineStore('music', () => {
 
     const play = () => {
         if (audio.value) {
-            audio.value.play();
-          isPlaying.value = true;
+            nextTick(() => {
+                audio.value.play();
+                isPlaying.value = true;
+            });
         }
     }
     const pause = () => {
@@ -52,31 +49,30 @@ export const useMusicStore = defineStore('music', () => {
             currentSong.value = currentPlaylist.value[currentSongIndex.value];
         }
     }
+
     const nextSong = () => {
         if (currentSongIndex.value < currentPlaylist.value.length - 1) {
             currentSongIndex.value++;
             currentSong.value = currentPlaylist.value[currentSongIndex.value];
-            currentSongCoverUrl.value = currentAlbumUrlList.value[currentSongIndex.value];
         }
         else
         {
             currentSongIndex.value = 0;
             currentSong.value = currentPlaylist.value[0];
-            currentSongCoverUrl.value = currentAlbumUrlList.value[0];
         }
+        play();
     }
     const previousSong = () => {
         if (currentSongIndex.value > 0) {
             currentSongIndex.value--;
             currentSong.value = currentPlaylist.value[currentSongIndex.value];
-            currentSongCoverUrl.value = currentAlbumUrlList.value[currentSongIndex.value];
         }
         else
         {
             currentSongIndex.value = currentPlaylist.value.length - 1;
             currentSong.value = currentPlaylist.value[currentSongIndex.value];
-            currentSongCoverUrl.value = currentAlbumUrlList.value[currentSongIndex.value];
         }
+        play();
     }
     return {
         currentSong,
@@ -92,7 +88,5 @@ export const useMusicStore = defineStore('music', () => {
       play,
       pause,
       isPlaying,
-      currentSongCoverUrl,
-      setCurrentAlbumUrlList, currentAlbumUrlList
     }
 });

@@ -1,74 +1,24 @@
 <script setup>
 import SongList from "@/components/SongList.vue";
 import {onMounted, ref, watch} from "vue";
-import {
-  apiGetAllSongs,
-} from "@/api/song-api.js";
+import {apiGetAudio, apiGetLyric, apiGetSongs,} from "@/api/song-api.js";
 import {Song} from "@/models/song.js";
-import {useAuthStore} from "@/stores/authStore.js";
-const authStore = useAuthStore();
+import {apiGetCover} from "@/api/album-api.js";
 const songs = ref([{...Song}]);
-
-const getAllSongs = async () => {
-  const response = await apiGetAllSongs()
-  songs.value = response.data;
+const page = ref(null)
+const getSongs = async (number=0,size=6) => {
+  const response = await apiGetSongs(number, size);
+  songs.value = response.data.content;
+  for(let i = 0; i < songs.value.length; i++){
+    songs.value[i].album.cover =await apiGetCover(songs.value[i].album.coverUrl);
+    songs.value[i].audio= await apiGetAudio(songs.value[i].audioUrl);
+    songs.value[i].lyric = await apiGetLyric(songs.value[i].lyricUrl);
+  }
+  page.value = response.data.page;
 }
-
-const tagClasses = ref('');
-
-const themeColorMap = {
-  light: 'bg-white',             // 轻主题
-  dark: 'bg-gray-100',           // 暗主题，改成较浅灰色
-  cupcake: 'bg-pink-300',        // cupcake 主题
-  bumblebee: 'bg-yellow-300',    // bumblebee 主题
-  emerald: 'bg-green-300',       // emerald 主题
-  corporate: 'bg-blue-300',      // corporate 主题
-  synthwave: 'bg-purple-300',    // synthwave 主题
-  retro: 'bg-red-300',           // retro 主题
-  cyberpunk: 'bg-indigo-300',    // cyberpunk 主题
-  valentine: 'bg-pink-400',      // valentine 主题
-  halloween: 'bg-orange-300',    // halloween 主题
-  garden: 'bg-green-400',        // garden 主题
-  forest: 'bg-teal-300',         // forest 主题
-  aqua: 'bg-teal-200',           // aqua 主题
-  lofi: 'bg-yellow-200',         // lofi 主题
-  pastel: 'bg-pink-200',         // pastel 主题
-  fantasy: 'bg-purple-200',      // fantasy 主题
-  wireframe: 'bg-gray-200',      // wireframe 主题
-  black: 'bg-pink-500',          // black 主题改为亮粉色
-  luxury: 'bg-yellow-400',       // luxury 主题
-  dracula: 'bg-purple-400',      // dracula 主题
-  cmyk: 'bg-cyan-50',  // 更浅的 cyan 颜色
-  autumn: 'bg-orange-400',       // autumn 主题
-  business: 'bg-blue-400',       // business 主题
-  acid: 'bg-lime-300',           // acid 主题
-  lemonade: 'bg-yellow-200',     // lemonade 主题
-  night: 'bg-blue-400',          // night 主题
-  coffee: 'bg-brown-400',        // coffee 主题
-  winter: 'bg-sky-200' // winter 主题使用亮蓝色
-};
-
-
-
-
-
-
-onMounted(getAllSongs);
-
-watch(
-    () => authStore.theme, // 监听 `authStore.theme` 的变化
-    (newTheme, oldTheme) => { // `newTheme` 是新的主题值，`oldTheme` 是变化前的主题值
-      console.log('Theme changed from', oldTheme, 'to', newTheme); // 输出日志查看变化
-
-      // 这里更新 `tagClasses`，根据新的主题值调整标签颜色
-      tagClasses.value = themeColorMap[newTheme] || 'bg-gray-700 text-white'; // 默认使用灰色，如果没有匹配到主题
-    },
-    { immediate: true } // 只有 `theme` 变化时触发，不在初始加载时触发
-);
-
-
-
+onMounted(getSongs);
 </script>
+
 <template>
   <div class="flex justify-center items-center">
     <div class="carousel w-full sm:w-full md:w-3/5 lg:w-1/2 h-auto sm:h-auto md:h-auto aspect-w-16 aspect-h-9 rounded-lg shadow-2xl">
@@ -141,8 +91,8 @@ watch(
           <p class="text-gray-400 text-xs truncate">Highvyn, Taylor Shin</p>
         </div>
         <div class="mt-2 flex flex-wrap gap-1">
-          <span :class="tagClasses" class="bg-gray-700 text-xs px-2 py-0.5 rounded-full">Pop</span>
-          <span :class="tagClasses" class="bg-gray-700 text-xs px-2 py-0.5 rounded-full">Electronic</span>
+          <span  class="bg-primary text-primary-content text-xs px-2 py-0.5 rounded-full">Pop</span>
+          <span class="bg-primary text-primary-content text-xs px-2 py-0.5 rounded-full">Electronic</span>
         </div>
       </div>
       <!-- 可以复制上面的结构，改内容以增加多个卡片 -->
@@ -274,9 +224,7 @@ watch(
     </div>
   </main>
 
-
-
-  <SongList :songs="songs" @reload-songs="getAllSongs" />
+  <SongList class="mr-8 mb-8" :songs="songs" :page="page" @reload-songs="getSongs" @page-change="getSongs" />
 </template>
 <style scoped>
 

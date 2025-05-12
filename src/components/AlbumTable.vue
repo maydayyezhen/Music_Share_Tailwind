@@ -4,7 +4,7 @@ import isEqual from 'lodash/isEqual'
 import {
   apiDeleteAlbumById,
   apiGetAllAlbums,
-  apiGetCoverFileUrl,
+  apiGetCover,
   apiUpdateAlbum,
   apiUploadCoverFile
 } from '@/api/album-api.js'
@@ -27,7 +27,7 @@ const getAllAlbums = async () => {
   albums.value = response.data
   originalAlbums.value = JSON.parse(JSON.stringify(response.data))
   for (const album of albums.value) {
-    albumCoverUrls.value[album.id] = await apiGetCoverFileUrl(album.coverUrl);
+    albumCoverUrls.value[album.id] = await apiGetCover(album.coverUrl);
     artistAvatarUrls.value[album.id] = await apiGetArtistAvatarFileUrl(album.artist.avatarUrl)
   }
 }

@@ -7,6 +7,7 @@ import MySelector from "@/components/MySelector.vue";
 import LongTextEditor from "@/components/LongTextEditor.vue";
 import AudioUpload from "@/components/AudioUpload.vue";
 import MiniAudioPlayer from "@/components/MiniAudioPlayer.vue";
+import Pagination from "@/components/Pagination.vue";
 
 const props = defineProps({
   modelValue: Array,
@@ -199,18 +200,14 @@ async function confirmDelete()
                   v-bind="column.props"
                   class="w-full"
               />
-              <LongTextEditor v-else-if ="column.editComponent==='LongTextEditor'"
+              <LongTextEditor v-else-if ="column.editComponent==='textarea'|| column.editComponent==='editor'"
                               v-model="editBuffer[column.key]"
                               :button-text="column.buttonText"
                               :title="typeof column.title === 'function' ? column.title(row) : column.title"
                               :edit="true"
+                              :edit-component="column.editComponent"
               />
               <AudioUpload v-else-if="column.editComponent === 'AudioUpload'" v-model="editBuffer[column.key]" />
-              <textarea
-                  v-else-if="column.editComponent === 'textarea'"
-                  v-model="editBuffer[column.key]"
-                  class="textarea textarea-bordered w-full resize-none"
-              ></textarea>
               <input
                   v-else-if="column.editComponent === 'input-file'"
                   type="file"
@@ -252,7 +249,7 @@ async function confirmDelete()
               <div v-else class="max-w-[10rem] overflow-hidden whitespace-nowrap text-ellipsis">
                 <img v-if="column.displayComponent === 'img'" :src="row[column.key]" alt="image" :class="column.imageClass || 'size-10 object-cover rounded-box'">
                 <MiniAudioPlayer v-else-if="column.displayComponent === 'MiniAudioPlayer'" :src="row[column.key]" />
-                <LongTextEditor v-else-if ="column.displayComponent==='LongTextEditor'"
+                <LongTextEditor v-else-if ="column.editComponent==='textarea'|| column.editComponent==='editor'"
                                 v-model="row[column.key]"
                                 :button-text="column.buttonText"
                                 :title="typeof column.title === 'function' ? column.title(row) : column.title"
@@ -291,107 +288,13 @@ async function confirmDelete()
               <button class="btn btn-sm" @click="emit('query-change',0,pagination.size,searchKeyword, sortBy, sortOrder)">搜索</button>
             </div>
 
-            <!-- 分页按钮组 -->
-            <div class="join">
-              <!-- 上一页 -->
-              <button
-                  class="join-item btn"
-                  :disabled="pagination.number === 0"
-                  @click="emit('query-change', pagination.number-1, pagination.size, searchKeyword, sortBy, sortOrder)"
-              >
-                «
-              </button>
-
-              <!-- 第1页 -->
-              <button
-                  class="join-item btn"
-                  :class="pagination.number === 0 ? 'bg-primary text-primary-content border-primary' : ''"
-                  @click="emit('query-change', 0, pagination.size, searchKeyword, sortBy, sortOrder)"
-              >
-                1
-              </button>
-
-              <!-- 左省略号 -->
-              <button
-                  v-if="pagination.number > 2 && pagination.totalPages > 4"
-                  class="join-item btn btn-disabled"
-              >
-                ...
-              </button>
-
-              <!-- 中间页码 -->
-              <button
-                  v-for="offset in [-1, 0, 1].filter(o => {
-              const pageIndex = pagination.number + o;
-              return pageIndex > 0 && pageIndex < pagination.totalPages - 1;
-            })"
-                  :key="offset"
-                  class="join-item btn"
-                  :class="offset === 0 ? 'bg-primary text-primary-content border-primary' : ''"
-                  @click="emit('query-change', pagination.number + offset, pagination.size, searchKeyword, sortBy, sortOrder)"
-              >
-                {{ pagination.number + offset + 1 }}
-              </button>
-
-              <!-- 右省略号 -->
-              <button
-                  v-if="pagination.number < pagination.totalPages - 3"
-                  class="join-item btn btn-disabled"
-              >
-                ...
-              </button>
-
-              <!-- 最后一页 -->
-              <button
-                  v-if="pagination.totalPages > 1"
-                  class="join-item btn"
-                  :class="pagination.number === pagination.totalPages - 1 ? 'bg-primary text-primary-content border-primary' : ''"
-                  @click="emit('query-change', pagination.totalPages-1, pagination.size, searchKeyword, sortBy, sortOrder)"
-              >
-                {{ pagination.totalPages }}
-              </button>
-
-              <!-- 下一页 -->
-              <button
-                  class="join-item btn"
-                  :disabled="pagination.number >= pagination.totalPages - 1"
-                  @click="emit('query-change', pagination.number+1, pagination.size, searchKeyword, sortBy, sortOrder)"
-              >
-                »
-              </button>
-            </div>
-
-            <!-- 每页条数 -->
-            <div class="flex items-center gap-2">
-              <span>每页</span>
-              <input
-                  type="number"
-                  v-model.number="pagination.size"
-                  class="input input-bordered input-sm w-16"
-                  min="1"
-                  max="100"
-              />
-              <span>条</span>
-            </div>
-
-            <!-- 跳转页 -->
-            <div class="flex items-center gap-2">
-              <span>跳转到第</span>
-              <input
-                  type="number"
-                  v-model.number="pageInput"
-                  class="input input-bordered input-sm w-16"
-                  :min="1"
-                  :max="pagination.totalPages"
-              />
-              <span>页</span>
-              <button
-                  class="btn btn-sm"
-                  @click="emit('query-change', Math.max(0, Math.min(pageInput - 1, pagination.totalPages - 1)), pagination.size, searchKeyword, sortBy, sortOrder)"
-              >
-                跳转
-              </button>
-            </div>
+            <pagination
+              :number="pagination.number"
+              :size="pagination.size"
+              :total-pages="pagination.totalPages"
+              @change="(number, size) => emit('query-change', number, size, searchKeyword, sortBy, sortOrder)"
+            >
+            </pagination>
 
           </div>
         </td>

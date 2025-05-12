@@ -1,88 +1,33 @@
 <script setup>
 import {onMounted, ref} from 'vue'
 import { useRoute } from 'vue-router'
-
-import { Album } from "@/models/album.js"
 import { Song } from "@/models/song.js"
-
-import {apiGetCoverFileUrl} from "@/api/album-api.js"
-import { apiGetSongById, apiGetAlbumBySongId, apiGetLyric} from "@/api/song-api.js"
+import {apiGetCover} from "@/api/album-api.js"
+import {apiGetSongById, apiGetAudio, apiGetLyric} from "@/api/song-api.js"
 import {useMusicStore} from "@/stores/musicStore.js";
-
 const route = useRoute()
-const album = ref({ ...Album })
 const song = ref({ ...Song })
-const activeTab = ref('playlist') // 当前选中的 tab
-const lyricsRef = ref(null)
-const lyrics = ref([]);
-const currentMusic = useMusicStore();
-const isSongModalVisible = ref(false)
-const selectedSong = ref(null) // 当前要编辑的歌曲
-
-
-const parseLRC = (lrcText) => {
-  return lrcText
-      .split('\n')
-      .map(line => {
-        const match = line.match(/\[(\d+):(\d+\.\d+)](.+)/)
-        if (match) {
-          const time = parseInt(match[1]) * 60 + parseFloat(match[2])
-          return { time, text: match[3] }
-        }
-        return null
-      })
-      .filter(Boolean)
-}
-
-const loadLRC = async () => {
-  const text = await apiGetLyric(song.value.lyricUrl)
-  lyrics.value = parseLRC(text)
-}
-
-const togglePlayPause = async (currentSong) => {
-  if (currentMusic.currentSong.id === currentSong.id) {
-    if (currentMusic.isPlaying) {
-      currentMusic.pause();
-    } else {
-      currentMusic.play();
-    }
-  } else {
-    currentMusic.setCurrentPlayList([song.value]);
-    currentMusic.setCurrentAlbumUrlList([albumCoverUrl.value]);
-    currentMusic.setCurrentSong(0);
-  }
-};
+const activeTab = ref('playlist')
+const musicStore = useMusicStore()
 
 function changeTab(tab) {
   activeTab.value = tab
 }
 
 const getSongById = async (songId) => {
-  const songResponse = await apiGetSongById(songId)
-  song.value = songResponse.data
+  song.value = await apiGetSongById(songId)
+  song.value.album.cover=await apiGetCover(song.value.album.coverUrl)
+  song.value.audio=await apiGetAudio(song.value.audioUrl)
+  song.value.lyric =await apiGetLyric(song.value.lyricUrl)
 }
 
-const getAlbumBySongId = async (songId) => {
-  const albumResponse = await apiGetAlbumBySongId(songId)
-  album.value = albumResponse.data
-}
-
-const coverImageKey = ref(Date.now());
-
-const refreshCoverImage = () => {
-  coverImageKey.value = Date.now()
-}
-const albumCoverUrl = ref('');
-const refreshAll = async () =>{
-  await getSongById(route.params.id);
-  await getAlbumBySongId(route.params.id);
-  albumCoverUrl.value = await apiGetCoverFileUrl(album.value.coverUrl);
-  refreshCoverImage();
-  await loadLRC();
+function play() {
+  musicStore.setCurrentPlayList([song.value])
+  musicStore.setCurrentSong(0)
 }
 
 onMounted(async () => {
-  await refreshAll();
+  await getSongById(route.params.id);
 })
 
 </script>
@@ -94,10 +39,11 @@ onMounted(async () => {
       <!-- 封面图 + 播放按钮 -->
       <div class="w-28 h-28 shrink-0">
         <div class="relative group w-full h-full rounded-box overflow-hidden">
-          <img :src="albumCoverUrl" alt="Cover" class="w-full h-full object-cover" />
+          <img :src="song.album.cover" alt="Cover" class="w-full h-full object-cover" />
           <!-- 悬浮播放按钮 -->
           <button
               class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 opacity-0 group-hover:opacity-70 transition-opacity"
+              @click="play"
           >
             <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 fill-white" viewBox="0 0 24 24">
               <path d="M8 5v14l11-7z" />
@@ -124,24 +70,24 @@ onMounted(async () => {
     <div role="tablist" class="tabs tabs-bordered mb-4">
       <a
           role="tab"
-          class="tab inline-block relative py-2 px-4 tab-active:text-primary hover:text-primary"
+          class="tab inline-block relative py-2 px-4 hover:text-primary"
       :class="{
-      'tab-active': activeTab === 'playlist'
+      'tab-active text-primary': activeTab === 'info'
       }"
-      @click="changeTab('playlist')"
+      @click="changeTab('info')"
       >
       歌曲信息
       <!-- 底部条 -->
       <span
-          v-if="activeTab === 'playlist'"
+          v-if="activeTab === 'info'"
           class="absolute bottom-0 left-1/4 w-1/2 h-1 bg-primary rounded-box"
       ></span>
       </a>
       <a
           role="tab"
-          class="tab inline-block relative py-2 px-4 tab-active:text-primary hover:text-primary"
+          class="tab inline-block relative py-2 px-4  hover:text-primary"
           :class="{
-      'tab-active': activeTab === 'comments'
+      'tab-active text-primary': activeTab === 'comments'
       }"
           @click="changeTab('comments')"
       >
@@ -160,7 +106,7 @@ onMounted(async () => {
     <!-- Tab 内容 -->
     <div class="bg-base-100 p-4 rounded-box">
       <!-- 歌曲信息 -->
-      <div v-if="activeTab === 'playlist'" class="space-y-2">
+      <div v-if="activeTab === 'info'" class="space-y-2">
         <p><span class="font-bold">演唱者：</span>{{ song.genre }}</p>
         <p><span class="font-bold">作词：</span>{{ song.genre }}</p>
         <p><span class="font-bold">作曲：</span>{{ song.genre }}</p>

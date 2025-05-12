@@ -2,7 +2,7 @@
 import {onMounted, ref} from 'vue'
 import isEqual from 'lodash/isEqual'
 import {apiDeleteArtistById, apiGetAllArtists, apiUpdateArtist,apiUploadAvatarFile} from "@/api/artist-api.js";
-import {apiGetCoverFileUrl} from "@/api/album-api.js";
+import {apiGetCover} from "@/api/album-api.js";
 import Alerts from "@/components/Alerts.vue";
 
 const artists = ref([]);           // 当前正在编辑或展示的艺术家数据
@@ -15,7 +15,7 @@ const getAllArtists = async () => {
   artists.value = response.data;
   originalArtists.value = JSON.parse(JSON.stringify(response.data));
   for (const artist of artists.value) {
-    artistAvatarUrls.value[artist.id] = await apiGetCoverFileUrl(artist.avatarUrl);
+    artistAvatarUrls.value[artist.id] = await apiGetCover(artist.avatarUrl);
   }
 }
 onMounted(() => {

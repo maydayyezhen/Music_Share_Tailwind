@@ -1,57 +1,103 @@
 <template>
   <div>
-    <!-- 查看/编辑按钮 -->
-    <button @click="openModal" class="ml-2 btn btn-link text-primary hover:underline">
+    <!-- 触发按钮 -->
+    <button @click="openModal" class="btn btn-link text-primary hover:underline">
       {{ buttonLabel }}
     </button>
 
-    <!-- Modal -->
+    <!-- 弹窗 -->
     <div v-if="isModalVisible" class="modal modal-open">
-      <div class="modal-box relative max-w-2xl bg-base-100 text-base-content">
+      <div class="modal-box w-11/12 max-w-6xl h-11/12 max-h-200 relative bg-base-100 text-base-content p-6 rounded-xl shadow-lg">
         <!-- 关闭按钮 -->
-        <button @click="closeModal" class="btn btn-sm btn-circle btn-ghost absolute right-3 top-3">
+        <button @click="closeModal" class="btn btn-sm btn-circle btn-ghost absolute right-4 top-4">
           ✕
         </button>
 
         <!-- 弹窗标题 -->
-        <h3 class="text-lg font-bold mb-4">{{ modalTitle }}</h3>
+        <h3 class="text-xl font-bold mb-4">{{ modalTitle }}</h3>
 
-        <!-- 编辑模式下文件导入按钮 -->
+        <!-- 编辑模式下的文件导入 -->
         <div v-if="edit" class="mb-4">
-          <div class="p-3 rounded-lg flex items-center justify-between bg-base-200">
-            <span class="text-sm opacity-80">从文件导入内容（支持 .txt/.lrc）</span>
-            <button class="btn btn-sm btn-outline btn-info" @click="triggerFileInput">
-              导入文件
-            </button>
-            <input
-                ref="fileInput"
-                type="file"
-                accept=".txt,.lrc"
-                class="hidden"
-                @change="handleFileChange"
-            />
+          <div class="bg-base-200 p-4 rounded flex justify-between items-center text-sm">
+            <span class="opacity-80">从文件导入内容（支持 .txt / .lrc）</span>
+            <div>
+              <button @click="triggerFileInput" class="btn btn-sm btn-outline btn-info">导入</button>
+              <input
+                  ref="fileInput"
+                  type="file"
+                  accept=".txt,.lrc"
+                  class="hidden"
+                  @change="handleFileChange"
+              />
+            </div>
           </div>
         </div>
 
-        <!-- 内容展示或编辑 -->
-        <div
-            v-if="!edit"
-            class="whitespace-pre-wrap font-mono text-sm p-3 rounded border border-base-300 bg-base-200"
-            :style="contentStyle"
-        >
-          {{ content }}
-        </div>
-        <textarea
-            v-else
-            v-model="content"
-            class="w-full p-3 border rounded-md resize-none font-mono text-sm bg-base-200 border-base-300 focus:outline-none focus:ring focus:ring-primary"
-            rows="12"
-            :style="contentStyle"
-        />
+        <!-- 内容区域 -->
+        <div class="min-h-[300px]">
+          <div
+              v-if="!edit&&editComponent==='textarea'"
+              class="whitespace-pre-wrap bg-base-200 p-4 rounded border border-base-300"
+              :style="{maxWidth: '1200px',minHeight: '400px',overflow: 'auto'}"
+          >
+            <div v-html="content"></div>
+          </div>
 
-        <!-- 编辑模式下保存按钮 -->
+          <textarea
+              v-if="edit && editComponent === 'textarea'"
+              v-model="content"
+              class="w-full h-[550px] p-3 rounded border border-base-300 bg-base-200 resize-none"
+          ></textarea>
+
+          <editor
+              v-if="edit&&editComponent==='editor'"
+              api-key="hzr7djicrlf61g59lbxp6axd69tks15k2sz4hjfck3kjku3r"
+              v-model="content"
+              :init="{
+              height: 550,
+              language: 'zh_CN',
+              language_url: '/languages/zh_CN.js',
+              skin: 'snow',
+              toolbar_mode: 'wrap',
+              plugins: 'code lineheight',
+              toolbar: 'undo redo | fontfamily fontsize | bold italic underline forecolor backcolor| alignleft aligncenter alignright alignjustify lineheight | indent outdent  | code',
+              branding: false,
+              line_height_formats: '1 1.2 1.4 1.6 2 2.4 3',
+              font_family_formats: `
+                微软雅黑=Microsoft YaHei, sans-serif;
+                宋体=SimSun, serif;
+                仿宋=FangSong, serif;
+                黑体=SimHei, sans-serif;
+                楷体=KaiTi, serif;
+                华文细黑=STHeiti, sans-serif;
+                华文楷体=STKaiti, serif;
+                细明体=PMingLiU, serif;
+                新宋体=NSimSun, serif;
+                思源黑体=Source Han Sans, sans-serif;
+                思源宋体=Source Han Serif, serif;
+                方正兰亭黑=FZLanTingHei, sans-serif;
+                方正宋体=FZSong, serif;
+                 Arial=Arial, Helvetica, sans-serif;
+                Times New Roman=Times New Roman, Times, serif;
+                Courier New=Courier New, Courier, monospace;
+                Georgia=Georgia, serif;
+                Verdana=Verdana, Geneva, sans-serif;
+                Tahoma=Tahoma, Geneva, sans-serif;
+                Trebuchet MS=Trebuchet MS, Helvetica, sans-serif;
+                Roboto=Roboto, sans-serif;
+                Open Sans=Open Sans, sans-serif;
+                Lato=Lato, sans-serif;
+                Montserrat=Montserrat, sans-serif;
+                Raleway=Raleway, sans-serif;
+                Playfair Display=Playfair Display, serif;
+              `
+              }"
+          />
+        </div>
+
+        <!-- 确认按钮 -->
         <div v-if="edit" class="mt-6 text-right">
-          <button class="btn btn-sm btn-primary" @click="saveContent">确认</button>
+          <button class="btn btn-primary btn-sm" @click="saveContent">确认</button>
         </div>
       </div>
     </div>
@@ -61,8 +107,10 @@
 
 
 
+
 <script setup>
 import { ref, defineProps, defineEmits, computed, watch } from 'vue'
+import Editor from '@tinymce/tinymce-vue'
 
 // 传入参数
 const props = defineProps({
@@ -81,6 +129,10 @@ const props = defineProps({
   edit: {
     type: Boolean,
     default: false
+  },
+  editComponent:{
+    type: String,
+    default: 'textarea'
   }
 })
 
@@ -151,10 +203,6 @@ const handleFileChange = (e) => {
 </script>
 
 <style scoped>
-.modal-box {
-  max-width: 600px;
-  width: 100%;
-}
 </style>
 
 

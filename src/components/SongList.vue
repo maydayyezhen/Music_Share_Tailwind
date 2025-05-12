@@ -1,16 +1,30 @@
 <script setup>
 import { ref, watch} from "vue";
 import {useMusicStore} from "@/stores/musicStore.js";
-import {apiGetCoverFileUrl} from "@/api/album-api.js";
 import router from "@/router/index.js";
+import Pagination from "@/components/Pagination.vue";
+import {useUserLikeStore} from "@/stores/userLikeStore.js";
+import { HeartIcon } from '@heroicons/vue/24/outline'
+import { HeartIcon as HeartSolidIcon } from '@heroicons/vue/24/solid'
+import { PlayIcon, PauseIcon } from '@heroicons/vue/24/outline'
 
-const props = defineProps(['songs']);
+
+
+const props = defineProps({
+      songs: Object,
+      page: Object,
+      showTrackNum: {
+        type: Boolean,
+        default: false
+      }
+    }
+)
+
 const currentMusic = useMusicStore();
-const emit = defineEmits(["reloadSongs"]);
+const userLikeStore = useUserLikeStore();
+const emit = defineEmits(["reloadSongs", "page-change"]);
 const isSongModalVisible = ref(false)
-const coverUrls = ref({});
 
-const urlMap = ref({})
 
 const togglePlayPause = (currentSong) => {
   if(currentMusic.currentSong.id === currentSong.id) {
@@ -23,7 +37,6 @@ const togglePlayPause = (currentSong) => {
   }
   else {
     currentMusic.setCurrentPlayList(props.songs);
-    currentMusic.setCurrentAlbumUrlList(coverUrls.value);
     const index =props.songs.findIndex(song => song.id === currentSong.id)
     currentMusic.setCurrentSong(index);
   }
@@ -35,58 +48,76 @@ watch(isSongModalVisible, (newVal, oldVal) => {
   }
 })
 
-watch(
-    () => props.songs,
-    async (newSongs) => {
-      if (!newSongs || newSongs.length === 0) return;
-      for (const [index, song] of newSongs.entries()) {
-        urlMap.value[index] = await apiGetCoverFileUrl(song.album.coverUrl);
-      }
-      coverUrls.value = urlMap.value;
-    },
-    { immediate: true } // 初始就触发一次
-);
-const liked = ref(false)
 </script>
 
 <template>
-  <ul class="list bg-base-100 rounded-box shadow-md">
-    <li class="p-4 pb-2 text-xs opacity-60 tracking-wide">Most played songs this week</li>
-    <li class="list-row" v-for="(song, index) in props.songs" :key="index">
-      <div><img v-if="coverUrls[index]" class="size-10 rounded-box" :src=coverUrls[index] alt=""/></div>
-      <div>
-        <div @click="router.push(`/song_detail/${song.id}`)">{{song.title}}</div>
-        <div class="text-xs uppercase font-semibold opacity-60">{{song.artist.name}}</div>
-      </div>
-      <button class="btn btn-square btn-ghost" @click="togglePlayPause(song)">
-        <!-- 播放图标 -->
-        <svg v-if="currentMusic.currentSong.id !== song.id || !currentMusic.isPlaying"
-             class="size-[1.2em]" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
-             fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M6 3L20 12 6 21 6 3z"></path>
-        </svg>
+  <div>
+    <ul class="list bg-base-100 rounded-box shadow-md">
+      <li class="list-row hover:bg-base-200"
+          v-for="song in songs"
+          :key="song.id"
+          :class="currentMusic.currentSong?.id === song.id ? 'font-bold text-primary bg-base-200' : ''">
+        <div v-if="showTrackNum" class="text-4xl font-thin opacity-30 tabular-nums w-12 text-center">
+          {{ song.trackNum != null ? String(song.trackNum).padStart(2, '0') : '00' }}
+        </div>
 
-        <!-- 暂停图标 -->
-        <svg v-if="currentMusic.currentSong.id === song.id && currentMusic.isPlaying"
-             class="size-[1.6em]" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
-             fill="currentColor">
-          <path d="M8 5h2.5v14H8V5zm5.5 0H16v14h-2.5V5z" />
-        </svg>
+        <div>
+          <img v-if="song.album.cover" class="size-10 rounded-box" :src="song.album.cover" alt="专辑封面" @click="router.push(`/album_detail/${song.album.id}`)"/>
+          <div v-else class="skeleton size-10 rounded-box"></div>
+        </div>
+        <div class="list-col-grow">
+          <div @click="router.push(`/song_detail/${song.id}`)">{{song.title}}</div>
+          <div class="text-xs uppercase font-semibold opacity-60" @click="router.push(`/artist_detail/${song.artist.id}`)">{{song.artist.name}}</div>
+        </div>
+        <button class="btn btn-square btn-ghost" @click="togglePlayPause(song)">
+          <component
+              v-if="currentMusic.currentSong.id !== song.id || !currentMusic.isPlaying"
+              :is="PlayIcon"
+              class="w-6 h-6"
+          />
+          <component
+              v-if="currentMusic.currentSong.id === song.id && currentMusic.isPlaying"
+              :is="PauseIcon"
+              class="w-6 h-6"
+          />
+        </button>
+        <div class="relative inline-block">
+          <button
+              class="btn btn-square btn-ghost text-red-500 text-2xl"
+              @click="userLikeStore.toggleLike(song.id,'song');song.likeCount -= userLikeStore.isLiked(song.id,'song') ? 1 : -1;"
+          >
+            <component
+                :is="userLikeStore.isLiked(song.id, 'song') ? HeartSolidIcon : HeartIcon"
+                class="w-6 h-6"
+            />
+          </button>
+          <span
+              class="absolute -top-1 -right-1 bg-base-300 text-[10px] font-medium px-1 py-0.5 rounded-full"
+          >
+  {{ song.likeCount }}
+</span>
 
-      </button>
-      <button class="btn btn-square btn-ghost" @click="liked = !liked">
-        <svg class="size-[1.2em]" xmlns="http://www.w3.org/2000/svg"
-             viewBox="0 0 24 24"
-             :fill="liked ? 'red' : 'none'"
-             stroke="red">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
-        </svg>
-      </button>
+        </div>
 
-    </li>
-  </ul>
+      </li>
+    </ul>
+
+    <!-- 分页组件 -->
+    <div class="mt-4 mb-4"> <!-- 增加一些顶部空间 -->
+      <pagination
+          v-if="page"
+          :number="page.number"
+          :size="page.size"
+          :total-pages="page.totalPages"
+          @change="(number, size) => emit('page-change', number, size)"
+          :sizeInput="false"
+          :numberInput="false"
+      >
+      </pagination>
+    </div>
+  </div>
 </template>
+
 
 <style scoped>
 

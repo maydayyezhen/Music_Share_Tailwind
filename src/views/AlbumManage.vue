@@ -3,13 +3,13 @@ import MyTable from "@/components/MyTable.vue";
 import {onMounted, ref} from "vue";
 import {
   apiDeleteAlbumById,
-  apiGetAlbumByAlbumId,
+  apiGetAlbumById, apiGetAlbums,
   apiGetAllAlbums,
-  apiGetCoverFileUrl,
+  apiGetCover,
   apiUpdateAlbum,
   apiUploadCoverFile
 } from "@/api/album-api.js";
-import {apiGetAllArtists, apiGetArtistAvatarFileUrl} from "@/api/artist-api.js";
+import {apiGetAllArtists, apiGetArtistAvatarFileUrl, apiGetArtists} from "@/api/artist-api.js";
 import Alerts from "@/components/Alerts.vue";
 const alertsRef = ref(null)
 function triggerToast(alertType, alertMessage) {
@@ -27,13 +27,17 @@ const getAllArtists = async () => {
 
 
 const albums = ref([])
-
-const getAllAlbums = async () => {
-  const response = await apiGetAllAlbums()
+const sortBy = ref('id')        // 默认按哪个字段排序
+const sortOrder = ref('asc')      // 默认排序方向
+//满足歌手查询的各种需求
+const getAlbums = async (page=0, size=5,keyword='',sortByField='id',sortOrderDirection='asc') => {
+  sortBy.value = sortByField
+  sortOrder.value = sortOrderDirection
+  const response = await apiGetAlbums(page, size, keyword,sortByField,sortOrderDirection);
   albums.value = response.data
   // 并行加载封面和头像
-  await Promise.all(albums.value.map(async (album) => {
-    album.cover = await apiGetCoverFileUrl(album.coverUrl);
+  await Promise.all(albums.value.content.map(async (album) => {
+    album.cover = await apiGetCover(album.coverUrl);
     album.artist.avatar = await apiGetArtistAvatarFileUrl(album.artist.avatarUrl);
   }));
 }
@@ -54,11 +58,11 @@ async function handleUpdateDataAndUploadFiles({ updatedRow, files }) {
     }
 
     // 获取更新后的数据
-    const updatedAlbum = (await apiGetAlbumByAlbumId(updatedRow.id)).data;
+    const updatedAlbum = (await apiGetAlbumById(updatedRow.id)).data;
     // 更新图片
-    updatedAlbum.cover = await apiGetCoverFileUrl(updatedAlbum.coverUrl);
+    updatedAlbum.cover = await apiGetCover(updatedAlbum.coverUrl);
     updatedAlbum.artist.avatar = await apiGetArtistAvatarFileUrl(updatedAlbum.artist.avatarUrl);
-    const index = albums.value.findIndex(album => album.id === updatedAlbum.id);
+    const index = albums.value.content.findIndex(album => album.id === updatedAlbum.id);
     if (index !== -1) {
       albums.value[index] = updatedAlbum;
     }
@@ -85,11 +89,11 @@ async function handleAddDataAndUploadFiles({ newRow, files, onSuccess}) {
     }
 
     // 获取更新后的数据
-    const newAlbum = (await apiGetAlbumByAlbumId(id)).data;
+    const newAlbum = (await apiGetAlbumById(id)).data;
     // 更新图片
-    newAlbum.cover = await apiGetCoverFileUrl(newAlbum.coverUrl);
+    newAlbum.cover = await apiGetCover(newAlbum.coverUrl);
     newAlbum.artist.avatar = await apiGetArtistAvatarFileUrl(newAlbum.artist.avatarUrl);
-    albums.value.push(newAlbum);
+    albums.value.content.push(newAlbum);
     triggerToast('success', '更新成功')
     onSuccess();
   } catch (error) {
@@ -134,22 +138,22 @@ async function handleDeleteData(id) {
   }
 }
 
-onMounted(getAllAlbums);
+onMounted(getAlbums);
 onMounted(getAllArtists);
 </script>
 
 <template>
   <alerts ref="alertsRef" />
   <my-table
-    :modelValue="albums"
+    :modelValue="albums.content"
     :columns="[
-  { key: 'id', label: 'ID', readOnly: true },
+  { key: 'id', label: 'ID', readOnly: true, sortable: true },
 
   { key: 'cover', label: '封面', displayComponent: 'img', editComponent: 'MyImageUpload',imageClass: 'size-14 object-cover rounded-box' },
 
   { key: 'coverUrl', label: '封面url', hidden: true },
 
-  { key: 'title', label: '专辑标题' ,bold:true},
+  { key: 'title', label: '专辑标题' ,bold:true, sortable: true},
 
   {
     key: 'artist',
@@ -164,16 +168,21 @@ onMounted(getAllArtists);
       getLabel: (item) => item.name,
       getImage: (item) => item.avatar,
       imageClass: 'object-cover rounded-full size-10'
-    }
+    },
+    sortable: true
   },
 
-  { key: 'description', label: '简介',displayComponent:'LongTextEditor', editComponent: 'LongTextEditor',buttonText: '简介', title: '简介'},
+  { key: 'description', label: '简介',displayComponent:'editor', editComponent: 'editor',buttonText: '简介', title: '简介'},
 
-  { key: 'releaseDate', label: '发行日期', editComponent: 'input-date' }
+  { key: 'releaseDate', label: '发行日期', editComponent: 'input-date',sortable: true }
 ]"
+    :pagination="albums.page"
+    :sort-by="sortBy"
+    :sort-order="sortOrder"
     @update="handleUpdateDataAndUploadFiles"
     @add="handleAddDataAndUploadFiles"
     @delete="handleDeleteData"
+    @query-change="getAlbums"
   />
 </template>
 
