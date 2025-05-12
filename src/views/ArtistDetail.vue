@@ -64,6 +64,7 @@ const changeTab = (key) => {
     <div class="flex-1 min-w-0">
       <h1 class="text-3xl font-bold leading-tight mb-3 truncate">{{ artist.name }}</h1>
       <p class="text-lg text-base-content/60  mb-2 truncate">外文名：Cheer 国籍：中国职业：歌手 、演员</p>
+
       <p class="text-lg text-base-content/70  mb-4">粉丝数：87.0万</p>
 
       <!-- 操作按钮组 -->
