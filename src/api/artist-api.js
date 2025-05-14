@@ -9,8 +9,9 @@ export const apiGetAllArtists = () => {
 export const apiGetArtistById = (id) => {
     return axios.get(`/artists/${id}`);
 }
-export const apiGetArtists = (page, size, keyword='', sortBy='', sortOrder='') => {
-    return axios.get(`/artists/paged?page=${page}&size=${size}&keyword=${keyword}&sortBy=${sortBy}&sortOrder=${sortOrder}`);
+export const apiGetArtists = async (page, size, keyword = '', sortBy = '', sortOrder = '') => {
+    const response = await axios.get(`/artists/paged?page=${page}&size=${size}&keyword=${keyword}&sortBy=${sortBy}&sortOrder=${sortOrder}`);
+    return response.data;
 }
 
 

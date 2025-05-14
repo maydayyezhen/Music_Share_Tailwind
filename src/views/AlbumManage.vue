@@ -2,15 +2,17 @@
 import MyTable from "@/components/MyTable.vue";
 import {onMounted, ref} from "vue";
 import {
+  apiCreateAlbum,
   apiDeleteAlbumById,
-  apiGetAlbumById, apiGetAlbums,
-  apiGetAllAlbums,
+  apiGetAlbumById,
+  apiGetAlbums,
   apiGetCover,
   apiUpdateAlbum,
   apiUploadCoverFile
 } from "@/api/album-api.js";
-import {apiGetAllArtists, apiGetArtistAvatarFileUrl, apiGetArtists} from "@/api/artist-api.js";
+import {apiGetAllArtists, apiGetArtistAvatarFileUrl} from "@/api/artist-api.js";
 import Alerts from "@/components/Alerts.vue";
+
 const alertsRef = ref(null)
 function triggerToast(alertType, alertMessage) {
   alertsRef.value?.showToast(alertType, alertMessage)
@@ -33,8 +35,7 @@ const sortOrder = ref('asc')      // 默认排序方向
 const getAlbums = async (page=0, size=5,keyword='',sortByField='id',sortOrderDirection='asc') => {
   sortBy.value = sortByField
   sortOrder.value = sortOrderDirection
-  const response = await apiGetAlbums(page, size, keyword,sortByField,sortOrderDirection);
-  albums.value = response.data
+  albums.value = await apiGetAlbums(page, size, keyword, sortByField, sortOrderDirection)
   // 并行加载封面和头像
   await Promise.all(albums.value.content.map(async (album) => {
     album.cover = await apiGetCover(album.coverUrl);
@@ -58,7 +59,7 @@ async function handleUpdateDataAndUploadFiles({ updatedRow, files }) {
     }
 
     // 获取更新后的数据
-    const updatedAlbum = (await apiGetAlbumById(updatedRow.id)).data;
+    const updatedAlbum = await apiGetAlbumById(updatedRow.id);
     // 更新图片
     updatedAlbum.cover = await apiGetCover(updatedAlbum.coverUrl);
     updatedAlbum.artist.avatar = await apiGetArtistAvatarFileUrl(updatedAlbum.artist.avatarUrl);
@@ -76,7 +77,7 @@ async function handleUpdateDataAndUploadFiles({ updatedRow, files }) {
 
 async function handleAddDataAndUploadFiles({ newRow, files, onSuccess}) {
   try {
-    const response = await apiUpdateAlbum(newRow);
+    const response = await apiCreateAlbum(newRow);
     const id = response.data.id;
     if (response.status!==200) {
       triggerToast('error', '新增失败')
@@ -89,7 +90,7 @@ async function handleAddDataAndUploadFiles({ newRow, files, onSuccess}) {
     }
 
     // 获取更新后的数据
-    const newAlbum = (await apiGetAlbumById(id)).data;
+    const newAlbum = await apiGetAlbumById(id);
     // 更新图片
     newAlbum.cover = await apiGetCover(newAlbum.coverUrl);
     newAlbum.artist.avatar = await apiGetArtistAvatarFileUrl(newAlbum.artist.avatarUrl);

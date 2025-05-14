@@ -7,8 +7,9 @@ export const apiGetAllSongs = () => {
     return axios.get(`/songs`);
 };
 
-export const apiGetSongs = (page, size, keyword='', sortBy='', sortOrder='') => {
-    return axios.get(`/songs/paged?page=${page}&size=${size}&keyword=${keyword}&sortBy=${sortBy}&sortOrder=${sortOrder}`);
+export const apiGetSongs = async (page, size, keyword = '', sortBy = '', sortOrder = '') => {
+    const response = await axios.get(`/songs/paged?page=${page}&size=${size}&keyword=${keyword}&sortBy=${sortBy}&sortOrder=${sortOrder}`);
+    return response.data;
 }
 
 //通过歌手ID获取歌曲

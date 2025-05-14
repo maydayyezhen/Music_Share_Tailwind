@@ -3,11 +3,15 @@ import MyTable from '../components/MyTable.vue'
 import Alerts from "@/components/Alerts.vue";
 import {onMounted, ref} from "vue";
 import {
-  apiCreateArtist, apiDeleteArtistById,
+  apiCreateArtist,
+  apiDeleteArtistById,
   apiGetArtistAvatarFileUrl,
-  apiGetArtistById, apiGetArtists,
-  apiUpdateArtist, apiUploadAvatarFile
+  apiGetArtistById,
+  apiGetArtists,
+  apiUpdateArtist,
+  apiUploadAvatarFile
 } from "@/api/artist-api.js";
+
 const alertsRef = ref(null)
 function triggerToast(alertType, alertMessage) {
   alertsRef.value?.showToast(alertType, alertMessage)
@@ -21,8 +25,7 @@ const sortOrder = ref('asc')      // 默认排序方向
 async function getArtists(page=0, size=5,keyword='',sortByField='id',sortOrderDirection='asc'){
   sortBy.value = sortByField
   sortOrder.value = sortOrderDirection
-  const response = await apiGetArtists(page, size, keyword,sortByField,sortOrderDirection);
-  artists.value = response.data;
+  artists.value = await apiGetArtists(page, size, keyword, sortByField, sortOrderDirection);
   // 并行加载头像
   await Promise.all(artists.value.content.map(async (artist) => {
     artist.avatar = await apiGetArtistAvatarFileUrl(artist.avatarUrl);

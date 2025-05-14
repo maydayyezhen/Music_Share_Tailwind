@@ -3,7 +3,6 @@ import NavBar from "@/components/NavBar.vue";
 import {onMounted, onUnmounted, computed, ref} from "vue";
 import { useAuthStore } from "@/stores/authStore.js";
 import BarPlayer from "@/components/BarPlayer.vue";
-import SideBar from "@/components/SideBar.vue";
 import { useRoute } from "vue-router";
 import {useMusicStore} from "@/stores/musicStore.js";
 
@@ -45,24 +44,20 @@ onUnmounted(() => {
 <template>
   <div>
     <!-- 顶部导航栏固定 -->
-    <nav-bar class="fixed top-0 z-20 w-full" />
+    <nav-bar class="fixed top-0 z-9999 w-full" />
 
     <!-- 内容区域 -->
     <div :class="['pt-16 flex', showPlayer ? 'pb-84' : '']">
       <!-- 条件渲染侧边栏（仅在大屏且该页面需要显示时） -->
-      <side-bar
-          v-if="showSidebar"
-          class="hidden lg:block fixed left-0 top-16 h-full w-80"
-      />
 
       <!-- 主体内容区域，lg 屏幕下仅在显示侧边栏时添加 margin -->
-      <div :class="['flex-1', showSidebar ? 'lg:ml-80' : '']">
+      <div :class="['flex-1']">
         <router-view />
       </div>
     </div>
 
     <!-- 播放器 -->
-    <bar-player v-show="showPlayer" />
+    <bar-player v-show="showPlayer" class="h-50"/>
   </div>
 </template>
 

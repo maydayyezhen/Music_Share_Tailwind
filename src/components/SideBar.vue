@@ -3,7 +3,7 @@
 </script>
 
 <template>
-  <div class="hidden lg:block fixed top-16 left-0 w-80 h-[calc(100vh-4rem)] p-4 z-10 bg-clip-border rounded-xl bg-base">
+  <div class="hidden lg:block fixed top-16 left-0 w-80 h-[calc(100vh-4rem)] p-4 z-10 bg-clip-border rounded-xl bg-base-300">
   <nav class="flex flex-col gap-1 min-w-[240px] p-2 font-sans text-base font-normal">
     <div role="button" tabindex="0" class="flex items-center w-full p-3 rounded-lg text-start leading-tight transition-all
       hover:bg-base-content focus:bg-base-content active:bg-base-content

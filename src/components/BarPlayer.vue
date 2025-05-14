@@ -2,6 +2,10 @@
 import {useMusicStore} from "@/stores/musicStore.js";
 import {apiGetLyric} from "@/api/song-api.js";
 import {onMounted, ref, watch} from "vue";
+import { ForwardIcon ,ChevronDownIcon,Bars3Icon,SpeakerWaveIcon,HeartIcon,BackwardIcon,PlayIcon, PauseIcon ,EllipsisHorizontalIcon} from '@heroicons/vue/24/solid'
+import { HeartIcon as HeartIconOutline } from "@heroicons/vue/24/outline";
+import {useUserLikeStore} from "@/stores/userLikeStore.js";
+
 const currentMusic = useMusicStore();
 
 const lyricsRef = ref(null)
@@ -112,13 +116,164 @@ onMounted(async () => {
   }
 })
 
-
 </script>
 
 <template>
 
   <div v-show="currentMusic.currentSong.id"
-       class="card fixed bottom-0 left-0 w-full z-50 backdrop-blur bg-base-100/80 shadow-xl border-t border-base-content/10">
+       class="flex gap-3 justify-between fixed bottom-0 left-0 w-full h-25 select-none bg-base-200">
+
+    <!--/ 歌曲信息-->
+    <div class="flex h-full w-1/4 items-center justify-between px-4">
+      <div class="flex gap-4 items-center">
+        <!-- 封面图 -->
+        <img :src="currentMusic.currentSong.album.cover" alt="" class="size-16 rounded-xl"/>
+
+        <!-- 歌曲信息 -->
+        <div class="flex flex-col min-w-0 gap-0.5">
+          <!-- 标题：大、清晰、有设计感 -->
+          <div class="flex gap-2">
+            <h2 class="text-base font-bold font-inter text-base-content truncate">
+              {{ currentMusic.currentSong.title }}
+            </h2>
+            <button @click="useUserLikeStore().toggleLike(currentMusic.currentSong.id,'song')" class="ml-3 ">
+              <HeartIconOutline v-if="!useUserLikeStore().isLiked(currentMusic.currentSong.id,'song')" class="w-5 h-5"></HeartIconOutline>
+              <HeartIcon v-else class="text-error w-5 h-5"></HeartIcon>
+            </button>
+            <!-- 更多按钮 -->
+            <EllipsisHorizontalIcon class="w-5 h-5"/>
+          </div>
+
+          <!-- 艺术家名：小一号，稍微淡一点，但仍然清晰 -->
+          <p class="text-sm font-medium font-inter text-base-content/80 truncate">
+            {{ currentMusic.currentSong.artist.name }}
+          </p>
+
+          <!-- 专辑信息：再小一号，用另一种字体（如 serif 或 rounded）作区分 -->
+          <p class="text-xs font-normal font-jetbrains text-base-content/60 truncate">
+            出自专辑：{{ currentMusic.currentSong.album.title }}
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="flex flex-col justify-between items-center gap-2 h-full w-1/2 px-4">
+
+      <div class="flex  gap-6 mt-6">
+        <!-- 上一首 -->
+        <button @click="currentMusic.previousSong" type="button">
+          <BackwardIcon class="w-5 h-5 text-base-content hover:text-primary" />
+        </button>
+
+        <!-- 播放 / 暂停 -->
+        <button @click="playPause" type="button">
+          <PauseIcon v-if="currentMusic.isPlaying" class="w-9 h-9" />
+          <PlayIcon v-else class="w-9 h-9" />
+        </button>
+
+        <!-- 下一首 -->
+        <button @click="currentMusic.nextSong" type="button">
+          <ForwardIcon class="w-5 h-5 text-base-content hover:text-primary" />
+        </button>
+      </div>
+
+      <!-- 进度条和时间 -->
+      <div class="flex items-center w-7/10 mb-2 gap-3 text-xs text-base-content/60">
+        <span class="w-10 text-right font-mono text-sm text-base-content/80">{{ formatTime(sliderTime) }}</span>
+
+        <div class="relative flex-1 h-1 rounded-full bg-base-content/20">
+          <!-- 播放进度 -->
+          <div
+              :style="{ width: (sliderTime / (currentMusic.currentSong.duration || 1)) * 100 + '%' }"
+              class="absolute w-full top-0 left-0 h-full bg-base-content rounded-full"
+          ></div>
+
+          <!-- 滑块 -->
+          <input
+              v-model="sliderTime"
+              :max="currentMusic.currentSong.duration || 0"
+              class="absolute w-full inset-0 w-full h-full appearance-none bg-transparent cursor-pointer
+          [&::-webkit-slider-thumb]:appearance-none
+          hover:[&::-webkit-slider-thumb]:h-3
+          hover:[&::-webkit-slider-thumb]:w-3
+          [&::-webkit-slider-thumb]:bg-base-content
+          [&::-webkit-slider-thumb]:rounded-full
+          [&::-webkit-slider-thumb]:shadow"
+              min="0"
+              step="0.1"
+              type="range"
+              @change="currentMusic.play()"
+              @input="currentMusic.pause();audioRef.currentTime = sliderTime;"
+          />
+        </div>
+
+        <span class="w-10 text-left font-mono text-sm text-base-content/80">{{ formatTime(currentMusic.currentSong.duration) }}</span>
+
+      </div>
+    </div>
+
+    <!--/ 其他按钮 -->
+    <div class="flex h-full w-1/4 justify-end items-center gap-4">
+      <!-- 歌单和歌曲列表 -->
+      <div class="dropdown dropdown-top dropdown-center flex">
+        <button
+            class="p-2"
+            tabindex="0"
+        >
+          <label class=" cursor-pointer">
+            <Bars3Icon class="h-6 w-6"/>
+          </label>
+        </button>
+
+
+        <ul class="menu menu-sm dropdown-content bg-base-100 rounded-box z-2 mt-2 w-52 p-2 shadow text-base"
+            tabindex="0">
+          <li v-for="thisSong in currentMusic.currentPlaylist" :key="thisSong.id"
+              @click="currentMusic.setCurrentSong(currentMusic.currentPlaylist.findIndex(song => song.id === thisSong.id))">
+            <a class="flex items-center gap-2 py-1">
+              <i v-if="thisSong.id === currentMusic.currentSong?.id" class="mdi mdi-music text-primary text-sm"></i>
+              <span :title="`${thisSong.title} - ${thisSong.artist.name}`"
+                    class="truncate max-w-[10rem] text-base font-medium">
+              {{ thisSong.title }} - {{ thisSong.artist.name }}
+            </span>
+            </a>
+          </li>
+        </ul>
+      </div>
+      <!-- 音量控制 -->
+      <div class="dropdown dropdown-top dropdown-center flex">
+        <button class="" tabindex="0">
+          <SpeakerWaveIcon class="w-6 h-6"/>
+        </button>
+        <div class="dropdown-content relative w-8 h-32 p-1 bg-base-100 rounded-box shadow">
+          <div class="absolute inset-x-1/2 top-2 bottom-0 w-1 -translate-x-1/2 bg-base-300 rounded-full"></div>
+          <div :style="{ height: ((sliderVolume || 0) * 100) + '%' }"
+               class="absolute bottom-0 left-1/2 w-1.5 -translate-x-1/2 bg-primary rounded-full"></div>
+          <input v-model="sliderVolume" class="absolute w-32 h-8 -rotate-90 left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 appearance-none bg-transparent cursor-pointer
+        [&::-webkit-slider-thumb]:appearance-none
+        hover:[&::-webkit-slider-thumb]:h-3
+        hover:[&::-webkit-slider-thumb]:w-3
+        [&::-webkit-slider-thumb]:bg-primary
+        [&::-webkit-slider-thumb]:rounded-full
+        [&::-webkit-slider-thumb]:shadow"
+                 max="1" min="0" step="0.01" type="range" @input="audioRef.volume = sliderVolume" />
+          <div class="absolute top-[-20px] left-1/2 -translate-x-1/2 text-xs">{{ ((audioRef?.volume || 0) * 100).toFixed(0) + '%' }}</div>
+        </div>
+      </div>
+      <button
+          id="toggleButton"
+          class="transition-transform duration-300 mr-6"
+          onclick="this.classList.toggle('rotate-180');musicModal.show();"
+      >
+        <label>
+          <ChevronDownIcon
+              :class="['transition-transform', 'duration-300', { 'rotate-180': rotated }]"
+              class="h-6 w-6"
+          />
+        </label>
+
+      </button>
+    </div>
     <audio
         ref="audioRef"
         :src="currentMusic.currentSong.audio"
@@ -127,200 +282,8 @@ onMounted(async () => {
         @play="currentMusic.isPlaying=true"
         @timeupdate="onTimeUpdate"
     ></audio>
-    <div
-        class="bg-base-100 rounded-tl-xl sm:rounded-t-xl p-4 pb-6 sm:p-8 lg:p-4 lg:pb-6 xl:p-8 space-y-6 sm:space-y-8 lg:space-y-6 xl:space-y-8">
-      <div class="flex items-center space-x-3.5 sm:space-x-5 lg:space-x-3.5 xl:space-x-5">
-        <img :src="currentMusic.currentSong.album.cover" alt="" class="size-20 rounded-box" height="160" width="160"/>
-        <div class="min-w-0 flex-auto space-y-1">
-
-          <p class="text-primary/60 text-sm font-semibold uppercase">
-            <abbr title="Episode">Track.</abbr>
-            {{ currentMusic.currentSong.trackNum != null ? String(currentMusic.currentSong.trackNum).padStart(2, '0') : '00' }}
-          </p>
-
-          <!-- 歌曲名 -->
-          <h2 class="text-lg sm:text-xl font-bold text-base-content truncate overflow-hidden whitespace-nowrap">
-            {{ currentMusic.currentSong.title }}
-          </h2>
-
-          <!-- 歌手名 -->
-          <p class="text-sm sm:text-base text-base-content/70 font-medium truncate overflow-hidden whitespace-nowrap">
-            {{ currentMusic.currentSong.artist.name }}
-          </p>
-        </div>
-      </div>
-
-      <div class="space-y-2">
-        <div class="relative w-full h-1.5 rounded-full bg-base-content/20">
-          <!-- 已播放的颜色条 -->
-          <div
-              :style="{ width: (sliderTime / (currentMusic.currentSong.duration || 1)) * 100 + '%' }"
-              class=" progress absolute top-0 left-0 h-full bg-primary"
-          ></div>
-
-          <!-- 滑动条 -->
-          <input
-              v-model="sliderTime"
-              :max="currentMusic.currentSong.duration || 0"
-              class="absolute inset-0 w-full h-full appearance-none bg-transparent cursor-pointer
-           [&::-webkit-slider-thumb]:appearance-none
-           hover:[&::-webkit-slider-thumb]:h-3
-           hover:[&::-webkit-slider-thumb]:w-3
-           [&::-webkit-slider-thumb]:bg-primary
-           [&::-webkit-slider-thumb]:rounded-full
-           [&::-webkit-slider-thumb]:shadow"
-              min="0"
-              step="0.1"
-              type="range"
-              @change="currentMusic.play()"
-              @input="currentMusic.pause();audioRef.currentTime = sliderTime;"
-          >
-        </div>
-        <div class="text-base-content/40 flex justify-between text-sm font-medium tabular-nums">
-          <div>{{ formatTime(sliderTime) }}</div>
-          <div>{{ formatTime(currentMusic.currentSong.duration) }}</div>
-        </div>
-      </div>
-
-    </div>
-    <div
-        class="bg-base-200 lg:rounded-b-xl py-4 px-1 sm:px-3 lg:px-1 xl:px-3 grid grid-cols-5 sm:grid-cols-7 lg:grid-cols-5 xl:grid-cols-7 items-center border-base">
-
-
-      <div class="dropdown dropdown-top dropdown-center flex">
-        <button class="btn btn-ghost hidden sm:block lg:hidden xl:block mx-auto" tabindex="0">
-          <svg class="w-7 h-7" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M3 6h18v2H3V6zm0 5h12v2H3v-2zm0 5h18v2H3v-2z"/>
-          </svg>
-        </button>
-        <ul
-            class="menu menu-sm dropdown-content bg-base-100 rounded-box z-2 mt-3 w-60 p-3 shadow text-base"
-            tabindex="0"
-        >
-          <li
-              v-for="thisSong in currentMusic.currentPlaylist"
-              :key="thisSong.id"
-              @click="currentMusic.setCurrentSong(currentMusic.currentPlaylist.findIndex(song => song.id === thisSong.id))"
-          >
-            <a class="flex items-center gap-3 py-2">
-              <svg
-                  v-if="thisSong.id === currentMusic.currentSong?.id"
-                  class="w-5 h-5 text-primary"
-                  fill="currentColor"
-                  viewBox="0 0 24 24"
-              >
-                <rect class="bar bar1" height="16" rx="1" width="3" x="3" y="4"/>
-                <rect class="bar bar2" height="20" rx="1" width="3" x="10" y="2"/>
-                <rect class="bar bar3" height="12" rx="1" width="3" x="17" y="6"/>
-              </svg>
-
-              <span
-                  :title="`${thisSong.title} - ${thisSong.artist.name}`"
-                  class="truncate max-w-[11rem] text-base font-medium"
-              >
-        {{ thisSong.title }} - {{ thisSong.artist.name }}
-      </span>
-            </a>
-          </li>
-        </ul>
-      </div>
-
-
-      <button class="mx-auto" type="button">
-        <svg fill="none" height="28" viewBox="0 0 48 48" width="28" xmlns="http://www.w3.org/2000/svg">
-          <path
-              d="M24 6V42C17 42 11.7985 32.8391 11.7985 32.8391H6C4.89543 32.8391 4 31.9437 4 30.8391V17.0108C4 15.9062 4.89543 15.0108 6 15.0108H11.7985C11.7985 15.0108 17 6 24 6Z"
-              fill="none" stroke="currentColor" stroke-linejoin="round" stroke-width="4"></path>
-          <path
-              d="M32 15L32 15C32.6232 15.5565 33.1881 16.1797 33.6841 16.8588C35.1387 18.8504 36 21.3223 36 24C36 26.6545 35.1535 29.1067 33.7218 31.0893C33.2168 31.7885 32.6391 32.4293 32 33"
-              stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="4"></path>
-        </svg>
-      </button>
-      <button class="btn btn-ghost hidden sm:block lg:hidden xl:block mx-auto" type="button" @click="currentMusic.previousSong">
-        <svg height="18" width="17">
-          <path d="M0 0h2v18H0V0zM4 9l13-9v18L4 9z" fill="currentColor"/>
-        </svg>
-      </button>
-      <button
-          class="mx-auto p-2 rounded-full transition hover:scale-105 active:scale-95 hover:cursor-pointer"
-          type="button"
-          @click="playPause"
-      >
-        <svg v-if=" currentMusic.isPlaying " fill="none" height="50" width="50">
-          <circle class="text-base-content/30" cx="25" cy="25" r="24" stroke="currentColor" stroke-width="1.5"/>
-          <path d="M18 16h4v18h-4V16zM28 16h4v18h-4z" fill="currentColor"/>
-        </svg>
-        <svg v-if=" !currentMusic.isPlaying " fill="none" height="50" viewBox="0 0 50 50" width="50">
-          <circle class="text-base-content/30" cx="25" cy="25" r="24" stroke="currentColor" stroke-width="1.5"/>
-          <path d="M13 9L0 0V18L13 9Z" fill="currentColor" transform="translate(20, 16)"/>
-        </svg>
-      </button>
-
-
-      <button class=" btn btn-ghost hidden sm:block lg:hidden xl:block mx-auto transition hover:cursor-pointer "
-              type="button"
-              @click="currentMusic.nextSong">
-        <svg fill="none" height="18" viewBox="0 0 17 18" width="17">
-          <path d="M17 0H15V18H17V0Z" fill="currentColor"/>
-          <path d="M13 9L0 0V18L13 9Z" fill="currentColor"/>
-        </svg>
-      </button>
-      <div class="dropdown dropdown-top dropdown-center flex">
-        <button class="btn btn-ghost hidden sm:block lg:hidden xl:block mx-auto" tabindex="0">
-          <svg fill="none" height="28" viewBox="0 0 48 48" width="28" xmlns="http://www.w3.org/2000/svg">
-            <path
-                d="M24 6V42C17 42 11.7985 32.8391 11.7985 32.8391H6C4.89543 32.8391 4 31.9437 4 30.8391V17.0108C4 15.9062 4.89543 15.0108 6 15.0108H11.7985C11.7985 15.0108 17 6 24 6Z"
-                fill="none" stroke="currentColor" stroke-linejoin="round" stroke-width="4"></path>
-            <path
-                d="M32 15L32 15C32.6232 15.5565 33.1881 16.1797 33.6841 16.8588C35.1387 18.8504 36 21.3223 36 24C36 26.6545 35.1535 29.1067 33.7218 31.0893C33.2168 31.7885 32.6391 32.4293 32 33"
-                stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="4"></path>
-          </svg>
-        </button>
-        <div class="dropdown-content relative w-10 h-40 p-1 bg-base-100  rounded-box shadow">
-          <!-- 背景轨道 -->
-          <div class="absolute inset-x-1/2 top-2 bottom-0 w-1 -translate-x-1/2 bg-base-300 rounded-full"></div>
-
-          <!-- 动态进度条，靠下对齐 -->
-          <div
-              :style="{ height: ((sliderVolume || 0) * 100) + '%' }"
-              class="absolute bottom-0 left-1/2 w-1.5 -translate-x-1/2 bg-primary rounded-full"
-          ></div>
-
-          <!-- 滑块 -->
-          <input
-              v-model="sliderVolume"
-              class="absolute w-40 h-10 -rotate-90 left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 appearance-none bg-transparent cursor-pointer
-      [&::-webkit-slider-thumb]:appearance-none
-      hover:[&::-webkit-slider-thumb]:h-3
-      hover:[&::-webkit-slider-thumb]:w-3
-      [&::-webkit-slider-thumb]:bg-primary
-      [&::-webkit-slider-thumb]:rounded-full
-      [&::-webkit-slider-thumb]:shadow"
-              max="1"
-              min="0"
-              step="0.01"
-              type="range"
-              @input="audioRef.volume = sliderVolume;"
-          />
-
-          <!-- 音量文本 -->
-          <div class="absolute top-[-20px] left-1/2 -translate-x-1/2 text-xs">
-            {{ ((audioRef?.volume || 0) * 100).toFixed(0) + '%' }}
-          </div>
-        </div>
-      </div>
-
-      <button class="btn btn-ghost hidden sm:block lg:hidden xl:block mx-auto " onclick="musicModal.showModal()">
-        <svg fill="none" height="24" viewBox="0 0 24 24" width="24">
-          <path d="M4 4H10V6H6V10H4V4Z" fill="currentColor"/>
-          <path d="M20 4V10H18V6H14V4H20Z" fill="currentColor"/>
-          <path d="M4 14H6V18H10V20H4V14Z" fill="currentColor"/>
-          <path d="M20 14V20H14V18H18V14H20Z" fill="currentColor"/>
-        </svg>
-      </button>
-
-    </div>
   </div>
+
   <dialog id="musicModal" class="modal  modal-start modal-bottom  w-full h-screen ">
     <div
         class="modal-box w-full w-full  p-0 rounded-none bg-black text-white"

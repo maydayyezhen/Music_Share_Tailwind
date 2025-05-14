@@ -1,12 +1,17 @@
 <script setup>
 import router from "@/router/index.js";
+import {computed, onMounted, ref} from "vue";
 const props = defineProps({
-      albums: Object,
+      albums: Array,
+      default: () => []
     }
 )
 
-function playAlbum(album) {
-
+function playAlbum(id) {
+  router.push({
+    path: `/album_detail/${id}`,
+    query: { autoPlay: 'true' }
+  });
 }
 
 </script>
@@ -20,7 +25,7 @@ function playAlbum(album) {
 
         <button
             class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 duration-300 group-hover:opacity-100 cursor-pointer"
-            @click.stop="playAlbum(album)"
+            @click.stop="playAlbum(album.id)"
         >
           <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 fill-white" viewBox="0 0 24 24">
             <path d="M8 5v14l11-7z"/>
@@ -33,6 +38,7 @@ function playAlbum(album) {
       <div class="text-xs text-gray-500 text-left">{{ album.releaseDate }}</div>
     </div>
   </div>
+
 </template>
 
 <style scoped>

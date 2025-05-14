@@ -3,228 +3,129 @@ import SongList from "@/components/SongList.vue";
 import {onMounted, ref, watch} from "vue";
 import {apiGetAudio, apiGetLyric, apiGetSongs,} from "@/api/song-api.js";
 import {Song} from "@/models/song.js";
-import {apiGetCover} from "@/api/album-api.js";
-const songs = ref([{...Song}]);
-const page = ref(null)
-const getSongs = async (number=0,size=6) => {
-  const response = await apiGetSongs(number, size);
-  songs.value = response.data.content;
-  for(let i = 0; i < songs.value.length; i++){
-    songs.value[i].album.cover =await apiGetCover(songs.value[i].album.coverUrl);
-    songs.value[i].audio= await apiGetAudio(songs.value[i].audioUrl);
-    songs.value[i].lyric = await apiGetLyric(songs.value[i].lyricUrl);
+import {apiGetAlbums, apiGetCover} from "@/api/album-api.js";
+import CarouselDisplay from "@/components/CarouselDisplay.vue";
+import AlbumCard from "@/components/AlbumCard.vue";
+import SongCard from "@/components/SongCard.vue";
+import {apiGetArtistAvatarFileUrl, apiGetArtists} from "@/api/artist-api.js";
+import ArtistCard from "@/components/ArtistCard.vue";
+const popularSongs = ref([{...Song}]);
+const newSongs = ref([{...Song}]);
+
+const getSongs = async (page, size, keyword = '', sortBy = '', sortOrder = '') => {
+  const response = await apiGetSongs(page, size, keyword, sortBy, sortOrder);
+  const songs = response.content;
+  for(let i = 0; i < songs.length; i++){
+    songs[i].album.cover =await apiGetCover(songs[i].album.coverUrl);
+    songs[i].audio= await apiGetAudio(songs[i].audioUrl);
+    songs[i].lyric = await apiGetLyric(songs[i].lyricUrl);
   }
-  page.value = response.data.page;
+  return songs;
 }
-onMounted(getSongs);
+const albums = ref([]);
+
+const getPopularAlbums = async () => {
+  albums.value = await apiGetAlbums(0, 16, '', 'likeCount', 'desc');
+  albums.value=albums.value.content;
+  for(let i = 0; i < albums.value.length; i++){
+    albums.value[i].cover =await apiGetCover(albums.value[i].coverUrl);
+  }
+};
+
+const artists = ref([]);
+const getArtists = async () => {
+  artists.value = await apiGetArtists(0, 16, '', 'likeCount', 'desc');
+  artists.value=artists.value.content;
+  for(let i = 0; i < artists.value.length; i++){
+    artists.value[i].avatar =await apiGetArtistAvatarFileUrl(artists.value[i].avatarUrl);
+  }
+}
+
+onMounted(async () => {
+  const [_, popular, recent] = await Promise.all([
+    getPopularAlbums(), // 假设这个没有返回值或者你不用它
+    getSongs(0, 16, '', 'likeCount', 'desc'),
+    getSongs(0, 4, '', 'album.releaseDate', 'desc'),
+    getArtists()
+  ]);
+
+  popularSongs.value = popular;
+  newSongs.value = recent;
+});
 </script>
 
 <template>
-  <div class="flex justify-center items-center">
-    <div class="carousel w-full sm:w-full md:w-3/5 lg:w-1/2 h-auto sm:h-auto md:h-auto aspect-w-16 aspect-h-9 rounded-lg shadow-2xl">
-      <div id="slide1" class="carousel-item relative w-full">
-        <img
-            src="https://images.unsplash.com/photo-1597577534602-722ff360b226?q=80&w=2643&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
-            class="w-full h-full object-cover" />
-        <div class="absolute bottom-5 left-5 right-5 text-white text-2xl font-bold p-4 rounded-md text-center" style="font-family: 'Playfair Display', serif;">
-          披头士传奇再现：终章《Let It Be》全新重制上线
-        </div>
-        <div class="absolute left-5 right-5 top-1/2 flex -translate-y-1/2 transform justify-between">
-          <a href="#slide4" class="btn btn-circle">❮</a>
-          <a href="#slide2" class="btn btn-circle">❯</a>
+  <div class="flex justify-center">
+    <div class="flex flex-col justify-center w-[90%] gap-10">
+      <div class="w-full">
+        <CarouselDisplay
+            title='热门歌曲'
+            :items="popularSongs"
+            :items-per-page="8"
+            header-class="mx-9.5"
+            id-prefix="popularSong"
+        >
+          <template #item="{ item }">
+            <SongCard
+                :song="item"
+            />
+          </template>
+          <template #action>
+            <button class="text-sm hover:underline cursor-pointer">查看全部</button>
+          </template>
+        </CarouselDisplay>
+      </div>
+      <div class="w-full">
+        <CarouselDisplay
+            title='热门歌手'
+            :items="artists"
+            :items-per-page="8"
+            header-class="mx-9.5"
+            id-prefix="artist"
+        >
+          <template #item="{ item }">
+            <ArtistCard
+                :artist="item"
+            />
+          </template>
+          <template #action>
+            <button class="text-sm hover:underline cursor-pointer">查看全部</button>
+          </template>
+        </CarouselDisplay>
+      </div>
+      <div class="w-full">
+        <div class="mx-11">
+          <div class="flex justify-between mt-5">
+            <h2 class="text-2xl font-bold">最新歌曲</h2>
+            <button class="text-sm hover:underline cursor-pointer">查看全部</button>
+          </div>
+          <SongList class="mb-8" :songs="newSongs" @reload-songs="getSongs" @page-change="getSongs" />
         </div>
       </div>
-      <div id="slide2" class="carousel-item relative w-full">
-        <img
-            src="https://images.unsplash.com/photo-1639023698782-71ef93c6af90?q=80&w=2670&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
-            class="w-full h-full object-cover" />
-        <div class="absolute bottom-5 left-5 right-5 text-white text-2xl font-bold p-4 rounded-md text-center" style="font-family: 'Playfair Display', serif;">
-          2023年音乐盛宴：不容错过的热门歌曲推荐
-        </div>
-        <div class="absolute left-5 right-5 top-1/2 flex -translate-y-1/2 transform justify-between">
-          <a href="#slide1" class="btn btn-circle">❮</a>
-          <a href="#slide3" class="btn btn-circle">❯</a>
-        </div>
+
+      <div class="w-full">
+        <CarouselDisplay
+            title='热门专辑'
+            :items="albums"
+            :items-per-page="8"
+            header-class="mx-9.5"
+            id-prefix="album"
+        >
+          <template #item="{ item }">
+            <AlbumCard
+                :album="item"
+                :show-date="false"
+            />
+          </template>
+          <template #action>
+            <button class="text-sm hover:underline cursor-pointer">查看全部</button>
+          </template>
+        </CarouselDisplay>
       </div>
-      <div id="slide3" class="carousel-item relative w-full">
-        <img
-            src="https://images.unsplash.com/photo-1514320291840-2e0a9bf2a9ae?q=80&w=2670&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
-            class="w-full h-full object-cover" />
-        <div class="absolute bottom-5 left-5 right-5 text-white text-2xl font-bold p-4 rounded-md text-center" style="font-family: 'Playfair Display', serif;">
-          摇滚乐的永恒经典：回顾那些让人热血沸腾的歌曲
-        </div>
-        <div class="absolute left-5 right-5 top-1/2 flex -translate-y-1/2 transform justify-between">
-          <a href="#slide2" class="btn btn-circle">❮</a>
-          <a href="#slide4" class="btn btn-circle">❯</a>
-        </div>
-      </div>
-      <div id="slide4" class="carousel-item relative w-full">
-        <img
-            src="https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?q=80&w=2670&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
-            class="w-full h-full object-cover" />
-        <div class="absolute bottom-5 left-5 right-5 text-white text-2xl font-bold p-4 rounded-md text-center" style="font-family: 'Playfair Display', serif;">
-          梦幻旋律：探索那些让人陶醉的古典音乐
-        </div>
-        <div class="absolute left-5 right-5 top-1/2 flex -translate-y-1/2 transform justify-between">
-          <a href="#slide3" class="btn btn-circle">❮</a>
-          <a href="#slide1" class="btn btn-circle">❯</a>
-        </div>
-      </div>
-    </div>
+
   </div>
-  <div class=" py-5 px-6 bg-base-300 shadow-2xl rounded-2xl">
-    <h2 class="text-2xl font-bold mb-6">Discover music made by real artists</h2>
-    <div class="flex gap-6 overflow-x-auto">
-      <!-- Music Card -->
-      <div class="w-48 shrink-0">
-        <div class="relative group">
-          <img src="https://telegra.ph/file/2acfcad8d39e49d95addd.jpg" class="rounded-lg" alt="Cover" />
-          <!-- Play button -->
-          <button class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 fill-white" viewBox="0 0 24 24">
-              <path d="M8 5v14l11-7z"/>
-            </svg>
-          </button>
-        </div>
-        <div class="mt-3">
-          <p class="font-semibold text-sm truncate">idk</p>
-          <p class="text-gray-400 text-xs truncate">Highvyn, Taylor Shin</p>
-        </div>
-        <div class="mt-2 flex flex-wrap gap-1">
-          <span  class="bg-primary text-primary-content text-xs px-2 py-0.5 rounded-full">Pop</span>
-          <span class="bg-primary text-primary-content text-xs px-2 py-0.5 rounded-full">Electronic</span>
-        </div>
-      </div>
-      <!-- 可以复制上面的结构，改内容以增加多个卡片 -->
-    </div>
   </div>
 
-  <main class="grid place-items-center min-h-screen  p-5">
-    <div>
-      <h1 class="text-4xl sm:text-5xl md:text-7xl font-bold mb-5">为你推荐</h1>
-      <section class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <!-- CARD 1 -->
-        <div class="bg-base-100 shadow-lg rounded-lg p-3 w-full md:w-72">
-          <div class="relative group overflow-hidden rounded-lg">
-            <img
-                class="w-full h-auto block object-cover rounded-lg"
-                src="https://telegra.ph/file/2acfcad8d39e49d95addd.jpg"
-                alt="Album Cover"
-            />
-            <!-- Hover Overlay -->
-            <div class="absolute inset-0 z-10 flex items-center justify-evenly
-  bg-base-100 bg-opacity-0 group-hover:bg-opacity-60
-  opacity-0 group-hover:opacity-100 transition duration-300">
-              <!-- Like Button -->
-              <button class=" hover:scale-110 transform transition">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-heart" viewBox="0 0 16 16">
-                  <path d="M8 2.748l-.717-.737C5.6.281 2.514.878 1.4 3.053c-.523 1.023-.641 2.5.314 4.385.92 1.815 2.834 3.989 6.286 6.357 3.452-2.368 5.365-4.542 6.286-6.357.955-1.886.838-3.362.314-4.385C13.486.878 10.4.28 8.717 2.01L8 2.748zM8 15C-7.333 4.868 3.279-3.04 7.824 1.143c.06.055.119.112.176.171a3.12 3.12 0 0 1 .176-.17C12.72-3.042 23.333 4.867 8 15z" />
-                </svg>
-              </button>
-              <!-- Play Button -->
-              <button class=" hover:scale-110 transform transition">
-                <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" fill="currentColor" class="bi bi-play-circle-fill" viewBox="0 0 16 16">
-                  <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zM6.79 5.093A.5.5 0 0 0 6 5.5v5a.5.5 0 0 0 .79.407l3.5-2.5a.5.5 0 0 0 0-.814l-3.5-2.5z" />
-                </svg>
-              </button>
-              <!-- More Button -->
-              <button class=" hover:scale-110 transform transition">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-three-dots" viewBox="0 0 16 16">
-                  <path d="M3 9.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z" />
-                </svg>
-              </button>
-            </div>
-          </div>
-          <div class="p-4">
-            <h3 class="text-lg font-semibold">Epoch</h3>
-            <p class="text-base-content/80 text-sm">Tycho</p>
-          </div>
-        </div>
-
-        <!-- END OF CARD 1 -->
-
-        <!-- CARD 2 -->
-        <div class="bg-base-100 shadow-lg rounded-lg p-3 w-full md:w-72">
-          <div class="relative group overflow-hidden rounded-lg">
-            <img
-                class="w-full h-auto block object-cover rounded-lg"
-                src="https://telegra.ph/file/2acfcad8d39e49d95addd.jpg"
-                alt="Album Cover"
-            />
-            <!-- Hover Overlay -->
-            <div class="absolute inset-0 z-10 flex items-center justify-evenly
-  bg-base-100 bg-opacity-0 group-hover:bg-opacity-60
-  opacity-0 group-hover:opacity-100 transition duration-300">
-              <!-- Like Button -->
-              <button class=" hover:scale-110 transform transition">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-heart" viewBox="0 0 16 16">
-                  <path d="M8 2.748l-.717-.737C5.6.281 2.514.878 1.4 3.053c-.523 1.023-.641 2.5.314 4.385.92 1.815 2.834 3.989 6.286 6.357 3.452-2.368 5.365-4.542 6.286-6.357.955-1.886.838-3.362.314-4.385C13.486.878 10.4.28 8.717 2.01L8 2.748zM8 15C-7.333 4.868 3.279-3.04 7.824 1.143c.06.055.119.112.176.171a3.12 3.12 0 0 1 .176-.17C12.72-3.042 23.333 4.867 8 15z" />
-                </svg>
-              </button>
-              <!-- Play Button -->
-              <button class=" hover:scale-110 transform transition">
-                <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" fill="currentColor" class="bi bi-play-circle-fill" viewBox="0 0 16 16">
-                  <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zM6.79 5.093A.5.5 0 0 0 6 5.5v5a.5.5 0 0 0 .79.407l3.5-2.5a.5.5 0 0 0 0-.814l-3.5-2.5z" />
-                </svg>
-              </button>
-              <!-- More Button -->
-              <button class=" hover:scale-110 transform transition">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-three-dots" viewBox="0 0 16 16">
-                  <path d="M3 9.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z" />
-                </svg>
-              </button>
-            </div>
-          </div>
-          <div class="p-4">
-            <h3 class="text-lg font-semibold">Epoch</h3>
-            <p class="text-base-content/80 text-sm">Tycho</p>
-          </div>
-        </div>
-        <!-- END OF CARD 2 -->
-
-        <!-- CARD 3 -->
-        <div class="bg-base-100 shadow-lg rounded-lg p-3 w-full md:w-72">
-          <div class="relative group overflow-hidden rounded-lg">
-            <img
-                class="w-full h-auto block object-cover rounded-lg"
-                src="https://telegra.ph/file/2acfcad8d39e49d95addd.jpg"
-                alt="Album Cover"
-            />
-            <!-- Hover Overlay -->
-            <div class="absolute inset-0 z-10 flex items-center justify-evenly
-  bg-base-100 bg-opacity-0 group-hover:bg-opacity-60
-  opacity-0 group-hover:opacity-100 transition duration-300">
-              <!-- Like Button -->
-              <button class=" hover:scale-110 transform transition">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-heart" viewBox="0 0 16 16">
-                  <path d="M8 2.748l-.717-.737C5.6.281 2.514.878 1.4 3.053c-.523 1.023-.641 2.5.314 4.385.92 1.815 2.834 3.989 6.286 6.357 3.452-2.368 5.365-4.542 6.286-6.357.955-1.886.838-3.362.314-4.385C13.486.878 10.4.28 8.717 2.01L8 2.748zM8 15C-7.333 4.868 3.279-3.04 7.824 1.143c.06.055.119.112.176.171a3.12 3.12 0 0 1 .176-.17C12.72-3.042 23.333 4.867 8 15z" />
-                </svg>
-              </button>
-              <!-- Play Button -->
-              <button class=" hover:scale-110 transform transition">
-                <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" fill="currentColor" class="bi bi-play-circle-fill" viewBox="0 0 16 16">
-                  <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zM6.79 5.093A.5.5 0 0 0 6 5.5v5a.5.5 0 0 0 .79.407l3.5-2.5a.5.5 0 0 0 0-.814l-3.5-2.5z" />
-                </svg>
-              </button>
-              <!-- More Button -->
-              <button class=" hover:scale-110 transform transition">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-three-dots" viewBox="0 0 16 16">
-                  <path d="M3 9.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z" />
-                </svg>
-              </button>
-            </div>
-          </div>
-          <div class="p-4">
-            <h3 class="text-lg font-semibold">Epoch</h3>
-            <p class="text-base-content/80 text-sm">Tycho</p>
-          </div>
-        </div>
-        <!-- END OF CARD 3 -->
-      </section>
-    </div>
-  </main>
-
-  <SongList class="mr-8 mb-8" :songs="songs" :page="page" @reload-songs="getSongs" @page-change="getSongs" />
 </template>
 <style scoped>
 

@@ -78,7 +78,7 @@ const themes = [
 </script>
 
 <template>
-  <div class="navbar bg-base-100 shadow-sm">
+  <div class="navbar bg-base-100">
     <div class="navbar-start">
       <div class="dropdown">
         <div tabindex="0" role="button" class="btn btn-ghost lg:hidden">
@@ -139,7 +139,7 @@ const themes = [
         </div>
       </button>
 
-      <div class="dropdown dropdown-end">
+      <div class="dropdown dropdown-end z-9999">
         <div
             tabindex="0"
             role="button"
@@ -169,7 +169,7 @@ const themes = [
 
         <ul
             tabindex="0"
-            class="dropdown-content overflow-y-auto  max-h-120 bg-base-100 rounded-box z-2 mt-3 w-52 p-2 shadow"
+            class="dropdown-content overflow-y-auto  max-h-120 bg-base-100 rounded-box mt-3 w-52 p-2 shadow"
         >
           <li v-for="theme in themes" :key="theme">
             <label class="flex items-center gap-3 px-2 py-2 cursor-pointer rounded-md hover:bg-base-200 transition w-full">
@@ -227,7 +227,7 @@ const themes = [
         </div>
         <ul
             tabindex="0"
-            class="menu menu-sm dropdown-content bg-base-100 rounded-box z-2 mt-3 w-52 p-2 shadow">
+            class="menu menu-sm dropdown-content bg-base-100 rounded-box z-50 mt-3 w-52 p-2 shadow">
           <li>
             <a class="justify-between">
               Profile

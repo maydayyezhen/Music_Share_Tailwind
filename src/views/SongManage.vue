@@ -1,15 +1,15 @@
 <script setup>
 import MyTable from "@/components/MyTable.vue";
 import {onMounted, ref} from "vue";
-import {apiGetAlbums, apiGetAllAlbums, apiGetCover,} from "@/api/album-api.js";
+import {apiGetAllAlbums, apiGetCover,} from "@/api/album-api.js";
 import {apiGetAllArtists, apiGetArtistAvatarFileUrl} from "@/api/artist-api.js";
 import Alerts from "@/components/Alerts.vue";
 import {
   apiCreateSong,
   apiDeleteSongById,
-  apiGetAllSongs,
   apiGetAudio,
-  apiGetSongById, apiGetSongs,
+  apiGetSongById,
+  apiGetSongs,
   apiUpdateSong,
   apiUploadAudioFile,
   apiUploadLrcFile
@@ -42,8 +42,7 @@ const sortOrder = ref('asc')      // 默认排序方向
 const getSongs = async (page=0, size=5,keyword='',sortByField='id',sortOrderDirection='asc') => {
   sortBy.value = sortByField
   sortOrder.value = sortOrderDirection
-  const response = await apiGetSongs(page, size, keyword,sortByField,sortOrderDirection);
-  songs.value = response.data;
+  songs.value = await apiGetSongs(page, size, keyword, sortByField, sortOrderDirection);
   await Promise.all(songs.value.content.map(async (song) => {
     song.album.cover = await apiGetCover(song.album.coverUrl);
     song.artist.avatar = await apiGetArtistAvatarFileUrl(song.artist.avatarUrl);
@@ -89,7 +88,7 @@ async function handleUpdateDataAndUploadFiles({ updatedRow, files }) {
     }
 
     // 获取更新后的数据
-    const updatedSong = (await apiGetSongById(updatedRow.id)).data;
+    const updatedSong = await apiGetSongById(updatedRow.id);
     updatedSong.album.cover = await apiGetCover(updatedSong.album.coverUrl);
     updatedSong.artist.avatar = await apiGetArtistAvatarFileUrl(updatedSong.artist.avatarUrl);
     updatedSong.audio = await apiGetAudio(updatedSong.audioUrl);
@@ -132,7 +131,7 @@ async function handleAddDataAndUploadFiles({ newRow, files, onSuccess}) {
     }
 
     // 获取更新后的数据
-    const newSong = (await apiGetSongById(id)).data;
+    const newSong = await apiGetSongById(id);
     newSong.album.cover = await apiGetCover(newSong.album.coverUrl);
     newSong.artist.avatar = await apiGetArtistAvatarFileUrl(newSong.artist.avatarUrl);
     newSong.audio = await apiGetAudio(newSong.audioUrl);
@@ -175,9 +174,9 @@ async function handleDeleteData(id) {
       triggerToast('error', '删除失败')
       return;
     }
-    const index = songs.value.findIndex(song => song.id === id);
+    const index = songs.value.content.findIndex(song => song.id === id);
     if (index !== -1) {
-      songs.value.splice(index, 1);
+      songs.value.content.splice(index, 1);
     }
     triggerToast('success', '删除成功')
   } catch (error) {
