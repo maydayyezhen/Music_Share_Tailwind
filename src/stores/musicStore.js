@@ -40,7 +40,10 @@ export const useMusicStore = defineStore('music', () => {
     }
 
     const clearPlaylist = () => {
+        debugger
+        pause();
         currentPlaylist.value = [];
+        currentSong.value = {...Song};
     }
     const deleteSongFromPlaylist = (index) => {
         currentPlaylist.value.splice(index, 1);

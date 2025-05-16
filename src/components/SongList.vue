@@ -7,6 +7,7 @@ import {useUserLikeStore} from "@/stores/userLikeStore.js";
 import { HeartIcon } from '@heroicons/vue/24/outline'
 import { HeartIcon as HeartSolidIcon } from '@heroicons/vue/24/solid'
 import { PlayIcon, PauseIcon } from '@heroicons/vue/24/solid'
+import PlayingBarsIcon from "@/components/icons/PlayingBarsIcon.vue";
 
 
 
@@ -92,7 +93,7 @@ watch(isSongModalVisible, (newVal, oldVal) => {
     <ul class="list rounded-box">
       <!-- 表头 -->
       <li
-          class="grid gap-4 px-4 py-2 text-sm font-semibold text-gray-500 items-center"
+          class="grid py-2 text-sm font-semibold text-gray-500 items-center"
           :class="[
     getGridCols(showTrackNum, showCover,showAlbum),
   ]"
@@ -110,7 +111,7 @@ watch(isSongModalVisible, (newVal, oldVal) => {
       <li
           v-for="song in songs"
           :key="song.id"
-          class=" group grid gap-4 px-4 py-2 font-semibold items-center hover:bg-base-200"
+          class=" group grid py-2 font-semibold items-center hover:bg-base-200 -mx-2 px-2 hover:bg-base-200"
           :class="[
     getGridCols(showTrackNum, showCover,showAlbum),
     currentMusic.currentSong?.id === song.id ? 'font-bold text-primary bg-base-200' : ''
@@ -121,29 +122,44 @@ watch(isSongModalVisible, (newVal, oldVal) => {
         <!-- Track Number 或 播放按钮 -->
         <div
             v-if="showTrackNum"
-            class="text-center tabular-nums text-sm text-white/40 font-normal w-8 relative "
+            class="text-center tabular-nums text-sm text-white/40 font-normal w-8 relative"
         >
-          <!-- 编号默认显示，悬浮时隐藏 -->
-          <span class="block group-hover:opacity-0 transition-opacity duration-150">
-    {{ song.trackNum != null ? String(song.trackNum).padStart(2, '0') : '00' }}
-  </span>
-
-          <!-- 播放按钮默认隐藏，悬浮时显示 -->
+          <!-- ✅ 如果是当前播放歌曲 -->
           <button
-              class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-150 cursor-pointer"
+              v-if="currentMusic.currentSong?.id === song.id"
+              class="absolute inset-0 flex items-center justify-center bg-transparent text-white"
               @click.stop="togglePlayPause(song)"
           >
             <component
-                :is="currentMusic.currentSong?.id === song.id && currentMusic.isPlaying ? PauseIcon : PlayIcon"
-                class="w-4 h-4 text-white"
+                :is="currentMusic.isPlaying ? PlayingBarsIcon : PlayIcon"
+                class="w-4 h-4 animate-pulse"
             />
           </button>
+
+          <!-- 🌀 否则：默认显示编号，悬浮显示播放按钮 -->
+          <template v-else>
+    <span class="block group-hover:opacity-0 transition-opacity duration-150">
+      {{ song.trackNum != null ? String(song.trackNum).padStart(2, '0') : '00' }}
+    </span>
+            <button
+                class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-150 cursor-pointer"
+                @click.stop="togglePlayPause(song)"
+            >
+              <component
+                  :is="PlayIcon"
+                  class="w-4 h-4 text-white"
+              />
+            </button>
+          </template>
         </div>
 
 
+
         <!-- 封面 -->
-        <div v-if="showCover" class="flex justify-center">
-          <div  class="relative group size-10 rounded-box overflow-hidden cursor-pointer">
+        <!-- 封面 -->
+        <div v-if="showCover">
+          <div class="relative group flex items-center justify-center size-10 rounded-box overflow-hidden cursor-pointer">
+
             <!-- 封面图或占位 -->
             <img
                 v-if="song.album.cover"
@@ -153,18 +169,31 @@ watch(isSongModalVisible, (newVal, oldVal) => {
             />
             <div v-else class="skeleton w-full h-full"></div>
 
-            <!-- 播放按钮，默认隐藏，悬浮显示 -->
+            <!-- ✅ 当前播放歌曲时，显示 PlayingBarsIcon，并可点击暂停 -->
             <button
+                v-if="currentMusic.currentSong?.id === song.id && currentMusic.isPlaying"
+                class="absolute inset-0 flex items-center justify-center bg-black/50 hover:bg-black/60 transition"
+                @click.stop="togglePlayPause(song)"
+            >
+              <PlayingBarsIcon class="text-white"/>
+            </button>
+
+            <!-- 🌀 非当前播放歌曲，悬浮时显示播放按钮 -->
+            <button
+                v-else
                 class="absolute inset-0 flex items-center justify-center bg-black/50 hover:bg-black/60 transition-opacity opacity-0 group-hover:opacity-100"
                 @click.stop="togglePlayPause(song)"
             >
               <component
-                  :is="currentMusic.currentSong?.id === song.id && currentMusic.isPlaying ? PauseIcon : PlayIcon"
+                  :is="PlayIcon"
                   class="w-5 h-5 text-white"
               />
             </button>
+
           </div>
         </div>
+
+
 
         <!-- 歌曲名 -->
         <div class="cursor-pointer hover:underline" @click="router.push(`/song_detail/${song.id}`)">

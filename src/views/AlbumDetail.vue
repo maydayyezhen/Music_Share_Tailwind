@@ -24,6 +24,9 @@ import formatDuration from "../Tools/Time.js";
 import CarouselDisplay from "@/components/CarouselDisplay.vue";
 import AlbumCard from "@/components/AlbumCard.vue";
 import ImagePreview from "@/components/ImagePreview.vue";
+import {useSidebarStore} from "@/stores/sidebarStore.js";
+import {apiGetArtistAvatarFile} from "@/api/artist-api.js";
+import router from "@/router/index.js";
 
 const route = useRoute()
 const musicStore = useMusicStore();
@@ -35,6 +38,7 @@ const getAlbumById = async (id) => {
   album.value = await apiGetAlbumById(id)
   album.value.cover = await apiGetCover(album.value.coverUrl);
   album.value.duration = 0;
+  album.value.artist.avatar = await apiGetArtistAvatarFile(album.value.artist.avatarUrl);
 }
 
 const getSongsByAlbumId = async (albumId) => {
@@ -152,39 +156,41 @@ function playAllSongs() {
       </div>
 
       <!-- 内容层 -->
-      <div class="relative z-20 flex flex-col justify-end h-full px-28 gap-8">
+      <div class="relative flex flex-col justify-end h-full gap-8"
+           :class="useSidebarStore().showSidebar ? 'px-21' : 'px-30'"
+      >
         <div class="flex">
           <!-- 专辑封面 -->
-          <ImagePreview :src="album.cover" class="w-60 h-60 rounded-xl shadow-lg object-cover" />
+          <ImagePreview :src="album.cover" class="w-60 h-60 rounded-xl  shadow-lg object-cover" />
 
 
-          <!-- 专辑信息 -->
-          <div class="ml-12 text-white  flex flex-col justify-center gap-3">
-            <!-- 专辑标题 -->
-            <h1 class="text-3xl font-semibold text-white/90">{{ album.title }}</h1>
+          <div class="flex z-20">
+            <div class="ml-12 text-white  flex flex-col justify-center gap-3">
+              <!-- 专辑标题 -->
+              <h1 class="text-3xl font-semibold text-white/90">{{ album.title }}</h1>
 
-            <!-- 艺术家名 -->
-            <div class="text-base font-medium text-white/80">
-              {{ album.artist.name }}
+              <div class="flex items-center gap-4">
+                <img :src="album.artist.avatar" class="w-10 h-10 rounded-full object-cover" alt="Artist Avatar">
+                <!-- 艺术家名 -->
+                <div class="text-base font-medium text-white/80 hover:underline cursor-pointer" @click="router.push('/artist_detail/'+album.artist.id)">
+                  {{ album.artist.name }}
+                </div>
+              </div>
+
+              <!-- 歌曲数量和总时长 -->
+              <div class="text-sm text-white/60">
+                共{{ songs.length }} 首 ({{ formatDuration(album.duration) }})
+              </div>
+
+              <!-- 发布日期 -->
+              <div class="text-xs text-white/60">
+                {{ album.releaseDate }}
+              </div>
             </div>
-
-            <!-- 歌曲数量和总时长 -->
-            <div class="text-sm text-white/60">
-              共{{ songs.length }} 首 ({{ formatDuration(album.duration) }})
-            </div>
-
-            <!-- 发布日期 -->
-            <div class="text-xs text-white/60">
-              {{ album.releaseDate }}
-            </div>
-
           </div>
 
-
-
         </div>
-        <!-- 专辑封面 -->
-        <div class="flex items-center gap-4  mb-10">
+        <div class="flex items-center gap-4  mb-10 z-20">
           <button
               class="w-35 h-11 px-5 py-2 bg-white text-black text-sm font-bold rounded-2xl hover:bg-gray-200 transition"
               @click="playAllSongs"
@@ -226,17 +232,18 @@ function playAllSongs() {
       </div>
     </div>
 
-    <div>
+    <div class=" mt-10"
+         :class="useSidebarStore().showSidebar ? 'px-21' : 'px-30'"
+    >
       <!-- 歌曲列表 -->
       <div v-if="activeTab === 'songs'" class=" flex flex-col gap-16">
-        <SongList :album="album" :show-track-num="true" :show-cover="false" :show-album="false" :songs="songs" class="px-23"/>
+        <SongList :album="album" :show-track-num="true" :show-cover="false" :show-album="false" :songs="songs"/>
         <CarouselDisplay
             :title="album.artist.name + '的其他专辑'"
             :items="albums"
             :items-per-page="8"
-            header-class="text-xl font-bold mb-4 ml-4"
+            header-class="text-xl font-bold mb-4"
             id-prefix="album"
-            class="px-20"
         >
           <template #item="{ item }">
             <AlbumCard
@@ -245,13 +252,11 @@ function playAllSongs() {
             />
           </template>
           <template #action>
-            <button class="text-sm hover:underline cursor-pointer mr-6" @click="changeTab('albums')">查看全部</button>
+            <button class="text-sm hover:underline cursor-pointer" @click="changeTab('albums')">查看全部</button>
           </template>
         </CarouselDisplay>
       </div>
       <!-- 专辑信息 -->
-
-
       <div v-else-if="activeTab === 'info'" class="relative overflow-hidden">
         <!-- 背景层：极度模糊 + 压暗晕影 -->
         <div
@@ -282,7 +287,7 @@ function playAllSongs() {
     </div>
 
   </div>
-  <div v-else class="fixed inset-0 flex justify-center items-center">
+  <div v-else class=" w-full h-full inset-0 flex justify-center items-center">
     <span class="loading loading-spinner loading-lg w-10 h-10"></span>
   </div>
 

@@ -1,7 +1,7 @@
 <script setup>
 import {onMounted, ref, watch} from 'vue'
 import{Artist} from "@/models/artist.js";
-import {apiGetArtistAvatarFileUrl, apiGetArtistById} from "@/api/artist-api.js";
+import {apiGetArtistAvatarFile, apiGetArtistById} from "@/api/artist-api.js";
 import {useRoute} from "vue-router";
 import {apiGetAlbumsByArtistId} from "@/api/album-api.js";
 import {apiGetSongsByArtistId} from "@/api/song-api.js";
@@ -17,6 +17,7 @@ import {
 } from '@heroicons/vue/24/outline'
 import CarouselDisplay from "@/components/CarouselDisplay.vue";
 import AlbumCard from "@/components/AlbumCard.vue";
+import {useSidebarStore} from "@/stores/sidebarStore.js";
 const route = useRoute()
 const artist = ref({...Artist})
 
@@ -38,14 +39,14 @@ const getArtistById = async (artistId) => {
   artist.value.albums = albums;
 
   // 第二步：并发获取 avatar、专辑封面、歌曲音频
-  const avatarPromise = apiGetArtistAvatarFileUrl(artist.value.avatarUrl);
+  const avatarPromise = apiGetArtistAvatarFile(artist.value.avatarUrl);
 
   const albumCoverPromises = artist.value.albums.map(album =>
-      apiGetArtistAvatarFileUrl(album.coverUrl)
+      apiGetArtistAvatarFile(album.coverUrl)
   );
 
   const songAudioPromises = artist.value.songs.map(song =>
-      apiGetArtistAvatarFileUrl(song.audioUrl)
+      apiGetArtistAvatarFile(song.audioUrl)
   );
 
   const [avatar, albumCovers, songAudios] = await Promise.all([
@@ -142,7 +143,9 @@ const changeTab = (key) => {
         <div class="absolute inset-0 z-10 bg-gradient-to-r from-black/80 via-transparent to-black/80"></div>
 
         <!-- 内容 -->
-        <div class="relative z-15 flex flex-col justify-end w-full mx-36 h-full py-12 text-white">
+        <div class="relative z-15 flex flex-col justify-end w-full  h-full py-8 text-white"
+             :class="useSidebarStore().showSidebar ? 'px-21' : 'px-30'"
+        >
           <div class="flex flex-col gap-3">
             <h1 class="text-[2.75rem] font-bold mb-6" :title="artist.name">{{ artist.name }}</h1>
             <!-- 按钮组 -->
@@ -194,51 +197,54 @@ const changeTab = (key) => {
 
       </div>
     </div>
-    <div v-if="activeTab === 'songs'" class="mt-10">
-      <song-list :songs="artist.songs" class="px-25"></song-list>
-    </div>
-    <div v-else-if="activeTab === 'featured'" class="flex flex-col gap-8 mt-10">
-      <div class="w-full px-25">
-        <div class="flex justify-between items-center mb-4">
-          <h2 class="text-xl font-bold font-sans ml-4">热门歌曲</h2>
-          <button  class="text-sm font-bold font-sans hover:underline cursor-pointer mr-6" @click="changeTab('songs')">查看全部</button>
+    <div class=" mt-10"
+         :class="useSidebarStore().showSidebar ? 'px-21' : 'px-30'"
+    >
+      <div v-if="activeTab === 'songs'">
+        <song-list :songs="artist.songs"></song-list>
+      </div>
+      <div v-else-if="activeTab === 'featured'" class="flex flex-col gap-8 ">
+        <div class="w-full">
+          <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-bold font-sans">热门歌曲</h2>
+            <button  class="text-sm font-bold font-sans hover:underline cursor-pointer" @click="changeTab('songs')">查看全部</button>
+          </div>
+          <song-list :songs="popularSongs"></song-list>
         </div>
-        <song-list :songs="popularSongs"></song-list>
-      </div>
-      <div class="px-25">
-        <CarouselDisplay
-            title='专辑'
-            :items="artist.albums"
-            :items-per-page="8"
-            header-class="text-xl font-bold mb-4 ml-4"
-            id-prefix="album"
-        >
-          <template #item="{ item }">
-            <AlbumCard
-                :album="item"
-                :show-date="false"
-            />
-          </template>
-          <template #action>
-            <button class="text-sm hover:underline cursor-pointer mr-6" @click="changeTab('albums')">查看全部</button>
-          </template>
-        </CarouselDisplay>
-      </div>
-    </div>
-    <div v-else-if="activeTab === 'albums'" class="flex justify-center px-4 mt-10">
-      <div class="grid grid-cols-8 gap-6">
-        <div v-for="album in artist.albums" :key="album.id" class="w-40">
-          <AlbumCard :album="album" :show-artist="false" />
+        <div>
+          <CarouselDisplay
+              title='专辑'
+              :items="artist.albums"
+              :items-per-page="8"
+              header-class="text-xl font-bold mb-4"
+              id-prefix="album"
+          >
+            <template #item="{ item }">
+              <AlbumCard
+                  :album="item"
+                  :show-date="false"
+              />
+            </template>
+            <template #action>
+              <button class="text-sm hover:underline cursor-pointer" @click="changeTab('albums')">查看全部</button>
+            </template>
+          </CarouselDisplay>
         </div>
       </div>
-    </div>
-    <div v-else-if="activeTab === 'video'">
-    </div>
-    <div v-else-if="activeTab === 'detail'" class="relative overflow-hidden">
-      <!-- 背景层：极度模糊 + 压暗晕影 -->
-      <div
-          class="absolute inset-0 z-[-2] bg-cover bg-center"
-          :style="{
+      <div v-else-if="activeTab === 'albums'">
+        <div class="flex flex-wrap gap-6">
+          <div v-for="album in artist.albums" :key="album.id" class="w-40">
+            <AlbumCard :album="album" :show-artist="false" />
+          </div>
+        </div>
+      </div>
+      <div v-else-if="activeTab === 'video'">
+      </div>
+      <div v-else-if="activeTab === 'detail'" class="relative px-30 overflow-hidden">
+        <!-- 背景层：极度模糊 + 压暗晕影 -->
+        <div
+            class="absolute inset-0 z-[-2] bg-cover bg-center"
+            :style="{
       backgroundImage: `url(${artist.avatar})`,
       filter: 'blur(80px) brightness(30%)',
       transform: 'scale(1.2)',
@@ -248,19 +254,21 @@ const changeTab = (key) => {
       backgroundColor: 'rgba(0, 0, 0, 0.6)',
       backgroundBlendMode: 'overlay'
     }"
-      ></div>
+        ></div>
 
-      <!-- 主要内容区域 -->
-      <div class="text-base-content bg-base-200 max-w-4xl mx-auto p-6 backdrop-blur-md backdrop-filter rounded-lg shadow-lg relative z-10 mt-10">
-        <div class="leading-relaxed text-lg mb-6 whitespace-pre-line font-serif">
-          <div v-html="artist.bio"></div>
-        </div>
-        <hr class="border-t-2 border-gray-300 mb-6" />
-        <div class="text-sm text-gray-600">
-          <p>如有错误欢迎联系修改。</p>
+        <!-- 主要内容区域 -->
+        <div class="text-base-content bg-base-200  mx-auto p-6 backdrop-blur-md backdrop-filter rounded-lg shadow-lg relative z-10 mt-10">
+          <div class="leading-relaxed text-lg mb-6 whitespace-pre-line font-serif">
+            <div v-html="artist.bio"></div>
+          </div>
+          <hr class="border-t-2 border-gray-300 mb-6" />
+          <div class="text-sm text-gray-600">
+            <p>如有错误欢迎联系修改。</p>
+          </div>
         </div>
       </div>
     </div>
+
   </div>
   <div v-else class=" w-full h-full inset-0 flex justify-center items-center">
     <span class="loading loading-spinner loading-lg w-10 h-10"></span>

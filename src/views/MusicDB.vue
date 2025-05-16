@@ -7,8 +7,9 @@ import {apiGetAlbums, apiGetCover} from "@/api/album-api.js";
 import CarouselDisplay from "@/components/CarouselDisplay.vue";
 import AlbumCard from "@/components/AlbumCard.vue";
 import SongCard from "@/components/SongCard.vue";
-import {apiGetArtistAvatarFileUrl, apiGetArtists} from "@/api/artist-api.js";
+import {apiGetArtistAvatarFile, apiGetArtists} from "@/api/artist-api.js";
 import ArtistCard from "@/components/ArtistCard.vue";
+import {useSidebarStore} from "@/stores/sidebarStore.js";
 const popularSongs = ref([{...Song}]);
 const newSongs = ref([{...Song}]);
 
@@ -37,11 +38,13 @@ const getArtists = async () => {
   artists.value = await apiGetArtists(0, 16, '', 'likeCount', 'desc');
   artists.value=artists.value.content;
   for(let i = 0; i < artists.value.length; i++){
-    artists.value[i].avatar =await apiGetArtistAvatarFileUrl(artists.value[i].avatarUrl);
+    artists.value[i].avatar =await apiGetArtistAvatarFile(artists.value[i].avatarUrl);
   }
 }
 
+const isPageReady = ref(false);
 onMounted(async () => {
+  isPageReady.value=false;
   const [_, popular, recent] = await Promise.all([
     getPopularAlbums(), // 假设这个没有返回值或者你不用它
     getSongs(0, 16, '', 'likeCount', 'desc'),
@@ -51,19 +54,20 @@ onMounted(async () => {
 
   popularSongs.value = popular;
   newSongs.value = recent;
+  isPageReady.value=true;
 });
 </script>
 
 <template>
-  <div class="flex justify-center mt-16">
-    <div class="flex flex-col justify-center w-[90%] gap-10">
+  <div v-if="isPageReady" class="flex justify-center mt-16">
+    <div class="flex flex-col justify-center gap-10"
+         :class="useSidebarStore().showSidebar ? 'w-[88%]' : 'w-[86%]'"
+    >
       <div class="w-full">
         <CarouselDisplay
             title='热门歌曲'
             :items="popularSongs"
-            :items-per-page="8"
-            header-class="mx-9.5"
-            id-prefix="popularSong"
+            header-class="text-xl font-bold"
         >
           <template #item="{ item }">
             <SongCard
@@ -79,9 +83,7 @@ onMounted(async () => {
         <CarouselDisplay
             title='热门歌手'
             :items="artists"
-            :items-per-page="8"
-            header-class="mx-9.5"
-            id-prefix="artist"
+            header-class="text-xl font-bold"
         >
           <template #item="{ item }">
             <ArtistCard
@@ -94,22 +96,18 @@ onMounted(async () => {
         </CarouselDisplay>
       </div>
       <div class="w-full">
-        <div class="mx-11">
-          <div class="flex justify-between mt-5">
-            <h2 class="text-2xl font-bold">最新歌曲</h2>
-            <button class="text-sm hover:underline cursor-pointer">查看全部</button>
+          <div class="flex justify-between">
+            <h2 class="text-xl font-bold">最新歌曲</h2>
+            <button class="text-sm font-bold hover:underline cursor-pointer">查看全部</button>
           </div>
-          <SongList class="mb-8" :songs="newSongs" @reload-songs="getSongs" @page-change="getSongs" />
-        </div>
+          <SongList class="mt-2" :songs="newSongs" @reload-songs="getSongs" @page-change="getSongs" />
       </div>
 
       <div class="w-full">
         <CarouselDisplay
             title='热门专辑'
             :items="albums"
-            :items-per-page="8"
-            header-class="mx-9.5"
-            id-prefix="album"
+            header-class="text-xl font-bold"
         >
           <template #item="{ item }">
             <AlbumCard
@@ -124,6 +122,9 @@ onMounted(async () => {
       </div>
 
   </div>
+  </div>
+  <div v-else class=" w-full h-full inset-0 flex justify-center items-center">
+    <span class="loading loading-spinner loading-lg w-10 h-10"></span>
   </div>
 
 </template>

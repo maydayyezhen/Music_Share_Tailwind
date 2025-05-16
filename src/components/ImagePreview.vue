@@ -1,19 +1,20 @@
 <template>
-  <div class="relative">
+  <div class="relative ">
     <!-- 骨架屏占位 -->
     <div v-if="!src" class="skeleton w-full h-full rounded-xl"></div>
 
     <!-- 图片 -->
+    <div class="relative z-20 ">
     <img
         v-if="src"
         :src="src"
         alt="专辑封面"
         class="cursor-zoom-in w-full h-full rounded-xl object-cover"
         @click="showPreview = true"
-    />
+    /></div>
 
     <!-- Dialog 模态框 -->
-    <dialog id="image_preview_modal" class="modal" :open="showPreview">
+    <dialog id="image_preview_modal" class="modal z-[9999] " :open="showPreview">
       <div class="modal-box p-0 max-w-3xl bg-transparent shadow-none">
         <!-- 点击大图也可以关闭模态框 -->
         <img

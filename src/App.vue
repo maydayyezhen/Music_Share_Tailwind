@@ -17,7 +17,8 @@ import {
   Radio,
   Clapperboard,
   Heart
-} from 'lucide-vue-next' // or 'lucide-vue' depending on your setup
+} from 'lucide-vue-next'
+import {useSidebarStore} from "@/stores/sidebarStore.js"; // or 'lucide-vue' depending on your setup
 
 const authStore = useAuthStore();
 const musicStore = useMusicStore();
@@ -27,11 +28,6 @@ const hidePlayerRoutes = ["/","/login", "/register"];
 const showPlayer = computed(() => {
   return !hidePlayerRoutes.includes(route.path) && !!musicStore.currentPlaylist.length;
 });
-
-const showSidebar = ref(false);
-const toggleSidebar = () => {
-  showSidebar.value = !showSidebar.value
-}
 
 const navigate = (path) => {
   router.push(path)
@@ -78,7 +74,7 @@ const sidebarItems = [
   <div class="h-screen overflow-hidden flex">
     <!-- 侧边栏 -->
     <aside
-        v-show="showSidebar"
+        v-show="useSidebarStore().showSidebar"
         class="h-screen w-64 bg-base-200 shadow-lg p-4 pt-20"
     >
       <ul class="menu space-y-2 text-sm font-medium w-full">
@@ -98,7 +94,7 @@ const sidebarItems = [
         </li>
       </ul>
     </aside>
-    <nav-bar class="fixed top-0 z-[9999] w-full" @toggle-sidebar="toggleSidebar" />
+    <nav-bar class="fixed top-0 z-[9999] w-full" />
     <!-- 主内容区域 -->
     <div class="flex-1 h-full overflow-hidden">
 
@@ -107,7 +103,7 @@ const sidebarItems = [
           <router-view class="animate-fade-in" />
         </div>
       </div>
-      <bar-player v-show="showPlayer" class="fixed bottom-0  left-0 right-0 z-[9999]" />
+      <bar-player v-show="showPlayer" class="fixed bottom-0  left-0 right-0" />
     </div>
   </div>
 </template>

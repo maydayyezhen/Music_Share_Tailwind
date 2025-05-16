@@ -8,11 +8,11 @@ const props = defineProps({
   },
   titleClass: {
     type: String,
-    default: 'text-sm font-medium text-left mt-2'
+    default: 'text-sm font-bold font-[Inter] text-left mt-2'
   },
-  dateClass: {
+  artistClass: {
     type: String,
-    default: 'text-xs text-gray-500 text-left'
+    default: 'text-xs font-[Inter] text-base-content/60 text-left'
   }
 })
 
@@ -27,7 +27,7 @@ function playSong() {
 
 
 <template>
-  <div :class="`flex flex-col`">
+  <div class="flex flex-col">
     <div v-if="song.album.cover" class="relative group hover:-translate-y-1 transform transition duration-300 cursor-pointer">
       <img
           :src="song.album.cover"
@@ -46,7 +46,7 @@ function playSong() {
     </div>
     <div v-else :class="`${imageSize} skeleton rounded-lg`"></div>
     <div :class="titleClass">{{ song.title }}</div>
-    <div :class="dateClass">{{ song.artist.name }}</div>
+    <div :class="artistClass">{{ song.artist.name }}</div>
   </div>
 </template>
 

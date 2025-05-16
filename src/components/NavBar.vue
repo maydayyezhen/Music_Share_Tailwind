@@ -1,10 +1,11 @@
 <script setup>
 import {ref, watch} from "vue";
-import {apiGetArtistAvatarFileUrl} from "@/api/artist-api.js";
+import {apiGetArtistAvatarFile} from "@/api/artist-api.js";
 import {useAuthStore} from "@/stores/authStore.js";
 import { createAvatar } from '@dicebear/core';
 import {thumbs} from '@dicebear/collection';
 import router from "@/router/index.js";
+import {useSidebarStore} from "@/stores/sidebarStore.js";
 
 const userAvatarUrl = ref('');
 const authStore = useAuthStore();
@@ -12,7 +13,7 @@ watch(
     () => authStore.user,
     async (newUser) => {
       if (newUser.avatarUrl) {
-        userAvatarUrl.value = await apiGetArtistAvatarFileUrl(newUser.avatarUrl);
+        userAvatarUrl.value = await apiGetArtistAvatarFile(newUser.avatarUrl);
       } else {
         userAvatarUrl.value = createAvatarUrl();
       }
@@ -33,7 +34,6 @@ function createAvatarUrl() {
   return `data:image/svg+xml;base64,${base64}`;
 }
 
-defineEmits(['toggle-sidebar'])
 
 const themes = [
   { name: "light", label: "亮色" },
@@ -84,7 +84,7 @@ const themes = [
     <!-- 左上角按钮 -->
     <div class="navbar-start">
       <!-- Drawer Toggle 按钮 -->
-      <label for="sidebar-drawer" class=" flex text-2xl items-center gap-3 tracking-wider cursor-pointer fixed top-4 left-4 z-[99999]" style="font-family: 'Lobster', cursive;" @click="$emit('toggle-sidebar')">
+      <label for="sidebar-drawer" class=" flex text-2xl items-center gap-3 tracking-wider cursor-pointer fixed top-4 left-4 z-[99999]" style="font-family: 'Lobster', cursive;" @click="useSidebarStore().toggleSidebar()">
         <svg class="w-7 h-7" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
           <path d="M15 1H4V9H3C1.34315 9 0 10.3431 0 12C0 13.6569 1.34315 15 3 15C4.65685 15 6 13.6569 6 12V5H13V9H12C10.3431 9 9 10.3431 9 12C9 13.6569 10.3431 15 12 15C13.6569 15 15 13.6569 15 12V1Z" />
         </svg>

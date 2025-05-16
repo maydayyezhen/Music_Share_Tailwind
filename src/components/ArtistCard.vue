@@ -8,7 +8,7 @@ const props = defineProps({
   },
   titleClass: {
     type: String,
-    default: 'text-sm font-medium text-left mt-2'
+    default: 'text-sm font-bold font-[Inter] text-left mt-2'
   }
 })
 

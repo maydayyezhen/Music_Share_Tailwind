@@ -1,36 +1,65 @@
 <script setup>
-import {computed, ref} from "vue";
+import { onBeforeUnmount, onMounted, ref} from "vue";
 
 const props = defineProps({
   title: String,
   items: Array,
-  itemsPerPage: { type: Number, default: 8 },
   headerClass: {
     type: String,
     default: 'text-2xl font-bold'
   },
-  idPrefix: { type: String, default: 'carousel' },
-  renderItem: Function,
 });
 
-const sliderNum = ref(1);
-
-const slides = computed(() => {
-  const { items, itemsPerPage } = props;
-  if (!items?.length) return [];
-  return Array.from({ length: Math.ceil(items.length / itemsPerPage) }, (_, index) =>
-      items.slice(index * itemsPerPage, (index + 1) * itemsPerPage)
-  );
-});
-
-
-function goToSlide(n) {
-  const target = document.getElementById(`${props.idPrefix}-slide${n}`);
-  if (target) {
-    target.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-    sliderNum.value = n;
-  }
+const containerRef = ref(null);
+const itemRefs = ref([]);
+const setItemRef = (el, index) => {
+  itemRefs.value[index] = el
 }
+const scrollTo = (index) => {
+  console.log(index)
+  if(index<0)
+    index=0;
+  if (index > itemRefs.value.length - 1) {
+    index = itemRefs.value.length - 1;
+  }
+  const container = containerRef.value;
+  const item = itemRefs.value[index];
+  console.log(item.offsetLeft);
+  if (container && item) {
+    container.scroll({
+      left: item.offsetLeft,
+      behavior: 'smooth'
+    });
+  }
+};
+
+const currentIndex = ref(0);
+onMounted(() => {
+  const container = containerRef.value;
+  if (!container) {
+    return;
+  }
+
+  const onScroll = () => {
+    const scrollLeft = container.scrollLeft;
+    const widths = itemRefs.value.map(el => el ? el.offsetLeft : 0);
+
+    for (let i = 0; i < widths.length - 1; i++) {
+      if (scrollLeft >= widths[i] && scrollLeft < widths[i + 1]) {
+        currentIndex.value = i;
+        return;
+      }
+    }
+    currentIndex.value = widths.length - 1;
+  };
+
+  container.addEventListener('scroll', onScroll);
+
+  onBeforeUnmount(() => {
+    container.removeEventListener('scroll', onScroll);
+  });
+});
+
 </script>
 
 <template>
@@ -38,23 +67,19 @@ function goToSlide(n) {
     <div class="flex justify-between" :class="headerClass">
       <h2>{{title}}</h2>
       <div class="flex gap-1">
-        <a @click="goToSlide(sliderNum === 1 ? slides.length : sliderNum - 1)" class="btn btn-square btn-ghost">❮</a>
-        <a @click="goToSlide(sliderNum === slides.length ? 1 : sliderNum + 1)" class="btn btn-square btn-ghost">❯</a>
+        <a @click="scrollTo(currentIndex-1)" class="btn btn-square btn-ghost">❮</a>
+        <a @click="scrollTo(currentIndex+1)" class="btn btn-square btn-ghost">❯</a>
         <slot name="action" />
       </div>
     </div>
-    <div class="carousel">
+    <div ref="containerRef" class=" relative flex gap-6 w-full overflow-auto scrollbar-none snap-x snap-mandatory">
       <div
-          v-for="(group, index) in slides"
+          v-for="(item, index) in items"
           :key="index"
-          :id="`${props.idPrefix}-slide${index + 1}`"
-          class="carousel-item w-full justify-center mt-1"
+          :ref="el => setItemRef(el, index)"
+          class="shrink-0 snap-start  mt-2"
       >
-        <div class="flex flex-wrap gap-6 justify-center">
-          <div v-for="item in group" :key="item.id">
-            <slot name="item" :item="item" />
-          </div>
-        </div>
+          <slot name="item" :item="item"/>
       </div>
     </div>
   </div>

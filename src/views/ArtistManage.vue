@@ -5,7 +5,7 @@ import {onMounted, ref} from "vue";
 import {
   apiCreateArtist,
   apiDeleteArtistById,
-  apiGetArtistAvatarFileUrl,
+  apiGetArtistAvatarFile,
   apiGetArtistById,
   apiGetArtists,
   apiUpdateArtist,
@@ -28,7 +28,7 @@ async function getArtists(page=0, size=5,keyword='',sortByField='id',sortOrderDi
   artists.value = await apiGetArtists(page, size, keyword, sortByField, sortOrderDirection);
   // 并行加载头像
   await Promise.all(artists.value.content.map(async (artist) => {
-    artist.avatar = await apiGetArtistAvatarFileUrl(artist.avatarUrl);
+    artist.avatar = await apiGetArtistAvatarFile(artist.avatarUrl);
   }))
 }
 
@@ -50,7 +50,7 @@ async function handleUpdateDataAndUploadFiles({ updatedRow, files }) {
     // 获取更新后的数据
     const updatedArtist = (await apiGetArtistById(updatedRow.id)).data;
     // 更新图片
-    updatedArtist.avatar = await apiGetArtistAvatarFileUrl(updatedArtist.avatarUrl);
+    updatedArtist.avatar = await apiGetArtistAvatarFile(updatedArtist.avatarUrl);
     const index = artists.value.content.findIndex(artist => artist.id === updatedArtist.id);
     if (index !== -1) {
       artists.value.content[index] = updatedArtist;
@@ -78,9 +78,9 @@ async function handleAddDataAndUploadFiles({ newRow, files, onSuccess}) {
     }
 
     // 获取更新后的数据
-    const newArtist = (await apiGetArtistById(id)).data;
+    const newArtist = await apiGetArtistById(id);
     // 更新图片
-    newArtist.avatar = await apiGetArtistAvatarFileUrl(newArtist.avatarUrl);
+    newArtist.avatar = await apiGetArtistAvatarFile(newArtist.avatarUrl);
     artists.value.content.push(newArtist);
     triggerToast('success', '更新成功')
     onSuccess();
@@ -131,9 +131,10 @@ onMounted(getArtists);
 
 <template>
   <alerts ref="alertsRef" />
-  <my-table
-      :modelValue="artists.content"
-      :columns="[
+  <div class="flex flex-col gap-4 mt-16 mx-6">
+    <my-table
+        :modelValue="artists.content"
+        :columns="[
   { key: 'id', label: 'ID', readOnly: true, sortable: true},
 
   { key: 'avatar', label: '头像', displayComponent: 'img', editComponent: 'MyImageUpload',imageClass: 'object-cover rounded-full size-12' },
@@ -145,14 +146,15 @@ onMounted(getArtists);
   { key: 'bio', label: '简介', displayComponent:'editor', editComponent: 'editor',buttonText: '简介', title: '简介'},
 
 ]"
-      :pagination="artists.page"
-      :sort-by="sortBy"
-      :sort-order="sortOrder"
-      @update="handleUpdateDataAndUploadFiles"
-      @add="handleAddDataAndUploadFiles"
-      @delete="handleDeleteData"
-      @query-change="getArtists"
-  />
+        :pagination="artists.page"
+        :sort-by="sortBy"
+        :sort-order="sortOrder"
+        @update="handleUpdateDataAndUploadFiles"
+        @add="handleAddDataAndUploadFiles"
+        @delete="handleDeleteData"
+        @query-change="getArtists"
+    />
+  </div>
 </template>
 
 <style scoped>

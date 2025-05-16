@@ -2,7 +2,7 @@
 import MyTable from "@/components/MyTable.vue";
 import {onMounted, ref} from "vue";
 import {apiGetAllAlbums, apiGetCover,} from "@/api/album-api.js";
-import {apiGetAllArtists, apiGetArtistAvatarFileUrl} from "@/api/artist-api.js";
+import {apiGetAllArtists, apiGetArtistAvatarFile} from "@/api/artist-api.js";
 import Alerts from "@/components/Alerts.vue";
 import {
   apiCreateSong,
@@ -24,7 +24,7 @@ const getAllArtists = async () => {
   const response = await apiGetAllArtists()
   artists.value = response.data;
   await Promise.all(artists.value.map(async (artist) => {
-    artist.avatar = await apiGetArtistAvatarFileUrl(artist.avatarUrl);
+    artist.avatar = await apiGetArtistAvatarFile(artist.avatarUrl);
   }))
 }
 const albums = ref([])
@@ -45,7 +45,7 @@ const getSongs = async (page=0, size=5,keyword='',sortByField='id',sortOrderDire
   songs.value = await apiGetSongs(page, size, keyword, sortByField, sortOrderDirection);
   await Promise.all(songs.value.content.map(async (song) => {
     song.album.cover = await apiGetCover(song.album.coverUrl);
-    song.artist.avatar = await apiGetArtistAvatarFileUrl(song.artist.avatarUrl);
+    song.artist.avatar = await apiGetArtistAvatarFile(song.artist.avatarUrl);
     song.audio = await apiGetAudio(song.audioUrl);
   }));
 }
@@ -90,7 +90,7 @@ async function handleUpdateDataAndUploadFiles({ updatedRow, files }) {
     // 获取更新后的数据
     const updatedSong = await apiGetSongById(updatedRow.id);
     updatedSong.album.cover = await apiGetCover(updatedSong.album.coverUrl);
-    updatedSong.artist.avatar = await apiGetArtistAvatarFileUrl(updatedSong.artist.avatarUrl);
+    updatedSong.artist.avatar = await apiGetArtistAvatarFile(updatedSong.artist.avatarUrl);
     updatedSong.audio = await apiGetAudio(updatedSong.audioUrl);
     const index = songs.value.content.findIndex(song => song.id === updatedSong.id);
     if (index !== -1) {
@@ -133,7 +133,7 @@ async function handleAddDataAndUploadFiles({ newRow, files, onSuccess}) {
     // 获取更新后的数据
     const newSong = await apiGetSongById(id);
     newSong.album.cover = await apiGetCover(newSong.album.coverUrl);
-    newSong.artist.avatar = await apiGetArtistAvatarFileUrl(newSong.artist.avatarUrl);
+    newSong.artist.avatar = await apiGetArtistAvatarFile(newSong.artist.avatarUrl);
     newSong.audio = await apiGetAudio(newSong.audioUrl);
     songs.value.content.push(newSong);
     triggerToast('success', '更新成功')
@@ -192,9 +192,10 @@ onMounted(getAllArtists);
 
 <template>
   <alerts ref="alertsRef" />
-  <my-table
-      :modelValue="songs.content"
-      :columns="[
+  <div class="flex mt-16 mx-3 justify-center items-center">
+    <my-table
+        :modelValue="songs.content"
+        :columns="[
   { key: 'id', label: 'ID', readOnly: true ,sortable: true},
 
   { key: 'title', label: '歌曲名',bold: true, sortable: true },
@@ -238,14 +239,16 @@ onMounted(getAllArtists);
   { key: 'audioUrl', hidden: true},
   { key: 'lyricUrl', hidden: true},
   { key: 'lyrics', label: '歌词', displayComponent: 'textarea', editComponent: 'textarea',buttonText: '歌词', title: '歌词'}]"
-      :pagination="songs.page"
-      :sort-by="sortBy"
-      :sort-order="sortOrder"
-      @update="handleUpdateDataAndUploadFiles"
-      @add="handleAddDataAndUploadFiles"
-      @delete="handleDeleteData"
-      @query-change="getSongs"
-  />
+        :pagination="songs.page"
+        :sort-by="sortBy"
+        :sort-order="sortOrder"
+        @update="handleUpdateDataAndUploadFiles"
+        @add="handleAddDataAndUploadFiles"
+        @delete="handleDeleteData"
+        @query-change="getSongs"
+    />
+  </div>
+
 </template>
 
 <style scoped>

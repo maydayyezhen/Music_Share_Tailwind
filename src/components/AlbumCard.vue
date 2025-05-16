@@ -4,7 +4,7 @@ const props = defineProps({
   album: Object,
   imageSize: {
     type: String,
-    default: 'w-41 h-41'
+    default: 'w-40 h-40'
   },
   titleClass: {
     type: String,
