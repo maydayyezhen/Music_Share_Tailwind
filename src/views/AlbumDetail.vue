@@ -95,21 +95,33 @@ const changeTab = (key) => {
   activeTab.value = key;
 }
 
-onMounted(async () => {
-  await getAlbumById(route.params.id);
-  await getSongsByAlbumId(route.params.id);
-  await getAlbumsByArtistId(album.value.artist.id);
-  if (route.query.autoPlay === 'true')
-    playAllSongs();
-})
+const isPageReady = ref(false);
 
-watch(() => route.params.id, async (newId) => {
-  await getAlbumById(newId);
-  await getSongsByAlbumId(newId);
-  await getAlbumsByArtistId(album.value.artist.id);
-  if (route.query.autoPlay === 'true')
+const loadAlbumPage = async (albumId, autoPlay = false) => {
+  isPageReady.value = false;
+
+  await getAlbumById(albumId);
+
+  await Promise.all([
+    getSongsByAlbumId(albumId),
+    getAlbumsByArtistId(album.value.artist.id)
+  ]);
+
+  if (autoPlay) {
     playAllSongs();
-})
+  }
+  isPageReady.value = true;
+};
+
+
+onMounted(() => {
+  loadAlbumPage(route.params.id, route.query.autoPlay === 'true');
+});
+
+watch(() => route.params.id, (newId) => {
+  loadAlbumPage(newId, route.query.autoPlay === 'true');
+});
+
 
 function playAllSongs() {
   musicStore.setCurrentPlayList(songs.value);
@@ -119,15 +131,15 @@ function playAllSongs() {
 </script>
 
 <template>
-  <div class="mx-auto py-6">
+  <div v-if="isPageReady">
     <!-- 歌曲封面 + 标题 -->
-    <div class="relative w-full h-[24rem] overflow-hidden">
+    <div class="relative w-full h-[29rem] overflow-hidden ">
       <!-- 背景图层 -->
       <div
           class="absolute inset-0 w-full h-full bg-cover bg-center scale-110"
           :style="{
       backgroundImage: `url(${album.cover})`,
-      filter: 'blur(10px) brightness(60%)'
+      filter: 'brightness(60%)'
     }"
       ></div>
 
@@ -269,6 +281,9 @@ function playAllSongs() {
       </div>
     </div>
 
+  </div>
+  <div v-else class="fixed inset-0 flex justify-center items-center">
+    <span class="loading loading-spinner loading-lg w-10 h-10"></span>
   </div>
 
 </template>

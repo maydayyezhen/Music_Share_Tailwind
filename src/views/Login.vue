@@ -39,17 +39,24 @@ async function handleSubmit() {
 
 <template>
   <alerts ref="alertsRef" />
-  <div class="hero min-h-screen bg-base-200 bg-cover bg-center" style="background-image: url('https://images.unsplash.com/photo-1459749411175-04bf5292ceea?q=80&w=2670&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D');">
+  <div class="hero min-h-full bg-base-200 bg-cover bg-center" style="background-image: url('https://images.unsplash.com/photo-1459749411175-04bf5292ceea?q=80&w=2670&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D');">
 
   <div class="hero-content flex-col lg:flex-row-reverse">
-      <div class="text-center lg:text-left">
-        <h1 class="text-5xl font-bold">立即登录，开始畅享音乐！</h1>
-        <p class="py-6">
-          登录你的账户，继续探索无尽音乐，享受每一刻的旋律。
-        </p>
-      </div>
+    <div class="text-center lg:text-left p-6">
+      <h1
+          class="text-5xl font-extrabold tracking-wide text-white uppercase drop-shadow-md"
+      >
+        立即登录，开始畅享音乐！
+      </h1>
+      <p
+          class="py-6 text-white tracking-wide drop-shadow-sm"
+      >
+        登录你的账户，继续探索无尽音乐，享受每一刻的旋律。
+      </p>
+    </div>
 
-      <div class="card bg-base-100 w-full max-w-sm shrink-0 shadow-2xl">
+
+    <div class="card bg-base-100 w-full max-w-sm shrink-0 shadow-2xl">
         <div class="card-body">
           <form ref="formRef" @submit.prevent="handleSubmit">
             <fieldset class="fieldset">

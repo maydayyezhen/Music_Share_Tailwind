@@ -1,13 +1,17 @@
 <script setup>
 import {useMusicStore} from "@/stores/musicStore.js";
 import {apiGetLyric} from "@/api/song-api.js";
-import {onMounted, ref, watch} from "vue";
-import { ForwardIcon ,ChevronDownIcon,Bars3Icon,SpeakerWaveIcon,HeartIcon,BackwardIcon,PlayIcon, PauseIcon ,EllipsisHorizontalIcon} from '@heroicons/vue/24/solid'
+import {nextTick, onMounted, ref, watch} from "vue";
+import { ForwardIcon ,ChevronDownIcon,Bars3Icon,SpeakerWaveIcon,TrashIcon,HeartIcon,BackwardIcon,PlayIcon, PauseIcon ,EllipsisHorizontalIcon} from '@heroicons/vue/24/solid'
 import { HeartIcon as HeartIconOutline } from "@heroicons/vue/24/outline";
 import {useUserLikeStore} from "@/stores/userLikeStore.js";
+import {useRouter} from "vue-router";
+import PlayList from "@/components/PlayList.vue";
+import {FastAverageColor} from "fast-average-color";
 
 const currentMusic = useMusicStore();
 
+const router = useRouter();
 const lyricsRef = ref(null)
 const lyrics = ref([]);
 const activeIndexes = ref([]);
@@ -38,6 +42,41 @@ const onSheetClick = (time) => {
 }
 
 
+function smoothScrollTo(container, target) {
+  if (!container || !target) return;
+
+  const containerRect = container.getBoundingClientRect();
+  const targetRect = target.getBoundingClientRect();
+
+  // 计算目标滚动的偏移量（使目标居中）
+  const targetScrollTop = container.scrollTop + (targetRect.top - containerRect.top) - container.clientHeight / 2 + target.clientHeight / 2;
+
+  const startScrollTop = container.scrollTop;
+  const distance = targetScrollTop - startScrollTop;
+  const duration = 500; // 滚动时长，单位ms
+  let startTime = null;
+
+  function easeInOutQuad(t) {
+    return t < 0.5 ? 2*t*t : -1+(4-2*t)*t; // 缓动函数，效果更自然
+  }
+
+  function step(timestamp) {
+    if (!startTime) startTime = timestamp;
+    const elapsed = timestamp - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+    const easedProgress = easeInOutQuad(progress);
+
+    container.scrollTop = startScrollTop + distance * easedProgress;
+
+    if (elapsed < duration) {
+      requestAnimationFrame(step);
+    }
+  }
+
+  requestAnimationFrame(step);
+}
+
+
 const onTimeUpdate = () => {
   if (!audioRef.value.paused) {
     sliderTime.value = audioRef.value.currentTime;
@@ -63,9 +102,11 @@ const onTimeUpdate = () => {
   // 滚动高亮歌词至居中
   const container = lyricsRef.value;
   const activeEl = container?.querySelector('.active');
+
   if (activeEl && !isManuallyScrolled.value) {
-    activeEl.scrollIntoView({behavior: 'smooth', block: 'center'});
+    smoothScrollTo(container, activeEl);
   }
+
 };
 
 
@@ -102,12 +143,46 @@ const formatTime = (time) => {
   const seconds = Math.floor(time % 60);
   return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
 }
+const showPlayer = ref(false);
+const onClickToggleButton = () => {
+  showPlayer.value = !showPlayer.value;
+};
+function handleClearAndClose() {
+  currentMusic.clearPlaylist();
+  setTimeout(() => {
+    togglePlaylist();
+  }, 100);
+}
+
+const showPlaylist = ref(false);
+
+function togglePlaylist() {
+  showPlaylist.value = !showPlaylist.value;
+}
+
 
 const audioRef = ref(null);
 
 watch(() => currentMusic.currentSong, async () => {
   await loadLRC();
 })
+
+// 提取颜色并生成渐变背景
+const gradientBackground = ref('linear-gradient(to bottom, #222, #000)')
+const hiddenImage = ref(null)
+
+watch(() => currentMusic.currentSong.album.cover, (url) => {
+  if (!url) return
+  const fac = new FastAverageColor()
+  const img = new Image()
+  img.crossOrigin = 'Anonymous'
+  img.src = url
+  img.onload = async () => {
+    const result = await fac.getColorAsync(img)
+    gradientBackground.value = `linear-gradient(to bottom, ${result.hex}, #111111)`
+  }
+})
+
 
 onMounted(async () => {
   currentMusic.setAudio(audioRef.value);
@@ -120,10 +195,13 @@ onMounted(async () => {
 
 <template>
 
-  <div v-show="currentMusic.currentSong.id"
-       class="flex gap-3 justify-between fixed bottom-0 left-0 w-full h-25 select-none bg-base-200">
+  <div v-show="currentMusic.currentPlaylist.length > 0"
+       class="flex gap-3 justify-between fixed bottom-0 left-0 w-full h-24
+            bg-base-200/90 backdrop-blur-md shadow-2xl border-t border-base-300
+            select-none z-[9999]">
 
-    <!--/ 歌曲信息-->
+
+  <!--/ 歌曲信息-->
     <div class="flex h-full w-1/4 items-center justify-between px-4">
       <div class="flex gap-4 items-center">
         <!-- 封面图 -->
@@ -131,49 +209,51 @@ onMounted(async () => {
 
         <!-- 歌曲信息 -->
         <div class="flex flex-col min-w-0 gap-0.5">
-          <!-- 标题：大、清晰、有设计感 -->
+          <!-- 歌曲名 -->
           <div class="flex gap-2">
-            <h2 class="text-base font-bold font-inter text-base-content truncate">
+            <h2 class="font-bold font-inter cursor-pointer hover:underline truncate" @click="router.push('/song_detail/' + currentMusic.currentSong.id)">
               {{ currentMusic.currentSong.title }}
             </h2>
-            <button @click="useUserLikeStore().toggleLike(currentMusic.currentSong.id,'song')" class="ml-3 ">
+            <!-- 收藏按钮 -->
+            <button @click="useUserLikeStore().toggleLike(currentMusic.currentSong.id,'song')" class="ml-3 cursor-pointer hover:brightness-75">
               <HeartIconOutline v-if="!useUserLikeStore().isLiked(currentMusic.currentSong.id,'song')" class="w-5 h-5"></HeartIconOutline>
               <HeartIcon v-else class="text-error w-5 h-5"></HeartIcon>
             </button>
             <!-- 更多按钮 -->
-            <EllipsisHorizontalIcon class="w-5 h-5"/>
+            <EllipsisHorizontalIcon class="w-5 h-5 cursor-pointer hover:brightness-75"/>
           </div>
 
-          <!-- 艺术家名：小一号，稍微淡一点，但仍然清晰 -->
-          <p class="text-sm font-medium font-inter text-base-content/80 truncate">
+          <!-- 艺术家名 -->
+          <p class="text-sm font-medium font-inter text-base-content/80 cursor-pointer hover:underline truncate" @click="router.push('/artist_detail/'+currentMusic.currentSong.artist.id)">
             {{ currentMusic.currentSong.artist.name }}
           </p>
 
-          <!-- 专辑信息：再小一号，用另一种字体（如 serif 或 rounded）作区分 -->
-          <p class="text-xs font-normal font-jetbrains text-base-content/60 truncate">
+          <!-- 专辑信息 -->
+          <p class="text-xs font-normal font-jetbrains text-base-content/60 cursor-pointer hover:underline truncate" @click="router.push('/album_detail/'+currentMusic.currentSong.album.id)">
             出自专辑：{{ currentMusic.currentSong.album.title }}
           </p>
         </div>
       </div>
     </div>
 
+    <!--/ 控制按钮与进度条 -->
     <div class="flex flex-col justify-between items-center gap-2 h-full w-1/2 px-4">
 
       <div class="flex  gap-6 mt-6">
         <!-- 上一首 -->
-        <button @click="currentMusic.previousSong" type="button">
-          <BackwardIcon class="w-5 h-5 text-base-content hover:text-primary" />
+        <button @click="currentMusic.previousSong" type="button" class="cursor-pointer hover:brightness-75">
+          <BackwardIcon class="w-5 h-5 "/>
         </button>
 
         <!-- 播放 / 暂停 -->
-        <button @click="playPause" type="button">
+        <button @click="playPause" type="button" class="cursor-pointer hover:brightness-75">
           <PauseIcon v-if="currentMusic.isPlaying" class="w-9 h-9" />
           <PlayIcon v-else class="w-9 h-9" />
         </button>
 
         <!-- 下一首 -->
-        <button @click="currentMusic.nextSong" type="button">
-          <ForwardIcon class="w-5 h-5 text-base-content hover:text-primary" />
+        <button @click="currentMusic.nextSong" type="button" class="cursor-pointer hover:brightness-75">
+          <ForwardIcon class="w-5 h-5" />
         </button>
       </div>
 
@@ -215,17 +295,25 @@ onMounted(async () => {
     <!--/ 其他按钮 -->
     <div class="flex h-full w-1/4 justify-end items-center gap-4">
       <!-- 歌单和歌曲列表 -->
-      <div class="dropdown dropdown-top dropdown-center flex">
+      <button
+          class="p-2"
+          tabindex="0"
+          @click="togglePlaylist"
+      >
+        <label class=" cursor-pointer hover:brightness-75">
+          <Bars3Icon class="h-6 w-6"/>
+        </label>
+      </button>
+
+      <div v-if="false" class="dropdown dropdown-top dropdown-center flex">
         <button
             class="p-2"
             tabindex="0"
         >
-          <label class=" cursor-pointer">
+          <label class=" cursor-pointer hover:brightness-75">
             <Bars3Icon class="h-6 w-6"/>
           </label>
         </button>
-
-
         <ul class="menu menu-sm dropdown-content bg-base-100 rounded-box z-2 mt-2 w-52 p-2 shadow text-base"
             tabindex="0">
           <li v-for="thisSong in currentMusic.currentPlaylist" :key="thisSong.id"
@@ -242,7 +330,7 @@ onMounted(async () => {
       </div>
       <!-- 音量控制 -->
       <div class="dropdown dropdown-top dropdown-center flex">
-        <button class="" tabindex="0">
+        <button class="cursor-pointer hover:brightness-75" tabindex="0">
           <SpeakerWaveIcon class="w-6 h-6"/>
         </button>
         <div class="dropdown-content relative w-8 h-32 p-1 bg-base-100 rounded-box shadow">
@@ -261,18 +349,15 @@ onMounted(async () => {
         </div>
       </div>
       <button
-          id="toggleButton"
-          class="transition-transform duration-300 mr-6"
-          onclick="this.classList.toggle('rotate-180');musicModal.show();"
+          class="transition-transform duration-300 mr-6 cursor-pointer hover:brightness-75"
+          @click="onClickToggleButton"
       >
-        <label>
-          <ChevronDownIcon
-              :class="['transition-transform', 'duration-300', { 'rotate-180': rotated }]"
-              class="h-6 w-6"
-          />
-        </label>
-
+        <ChevronDownIcon
+            :class="['transition-transform duration-300', { 'rotate-180': showPlayer }]"
+            class="h-6 w-6"
+        />
       </button>
+
     </div>
     <audio
         ref="audioRef"
@@ -284,165 +369,139 @@ onMounted(async () => {
     ></audio>
   </div>
 
-  <dialog id="musicModal" class="modal  modal-start modal-bottom  w-full h-screen ">
+  <dialog id="musicModal" class="modal modal-bottom h-screen w-screen">
+    <div class="modal-box h-full w-full max-w-none max-h-none bg-primary">
+      <form method="dialog">
+        <button>关闭</button>
+      </form>
+    </div>
+
+  </dialog>
+  <transition name="slide-up">
     <div
-        class="modal-box w-full w-full  p-0 rounded-none bg-black text-white"
+        v-if="showPlayer"
+        class="fixed flex justify-between px-120 bottom-[80px] left-0 right-0 top-0 z-100 bg-base-100 shadow-xl overflow-hidden"
     >
-        <!-- 模糊背景图 -->
-        <img
-            :src="currentMusic.currentSong.album.cover"
-            alt="背景图"
-            class="absolute top-0 left-0 w-full h-full blur-[30px] opacity-40 object-cover z-[1] select-none"
-        />
+      <!-- 渐变背景 -->
+      <div class="absolute inset-0 z-0 transition-all duration-500" :style="{ background: gradientBackground }"></div>
 
-        <!-- 关闭按钮 -->
-        <form method="dialog">
-          <button
-              class="btn btn-sm btn-circle btn-ghost absolute right-4 top-4 z-13 text-white bg-black/30">
-            <svg fill="none" height="24" viewBox="0 0 24 24" width="24">
-              <path d="M14 14H20V16H16V20H14V14Z" fill="currentColor"/>
-              <path d="M10 4V10H4V8H8V4H10Z" fill="currentColor"/>
-              <path d="M4 14H10V20H8V16H4V14Z" fill="currentColor"/>
-              <path d="M14 4H16V8H20V10H14V4Z" fill="currentColor"/>
-            </svg>
+      <!-- 暗色遮罩层（盖在渐变背景上，但在内容下） -->
+      <div class="absolute inset-0 z-[1] bg-black opacity-50 pointer-events-none"></div>
 
-          </button>
-        </form>
-
-        <!-- 歌曲信息 + 封面 -->
-        <div class="flex flex-col items-center justify-center h-full relative z-10">
-
-          <!-- 封面 -->
+      <div class="flex flex-col h-full z-10 items-center justify-center">
+        <div class="album-wrapper cursor-pointer" @click="goToAlbum(currentMusic.currentSong.album.id)">
           <img
               :src="currentMusic.currentSong.album.cover"
               alt="歌曲封面"
-              class="rounded-lg shadow-lg w-48 h-48 object-cover cursor-pointer"
-              @click="goToAlbum(currentMusic.currentSong.album.id)"
+              class="album-disc rounded-full shadow-2xl object-cover"
           />
+          <div class="album-center"></div>
+        </div>
 
-          <!-- 歌曲标题 & 歌手 -->
-          <div class="text-center mt-4">
-            <div
-                class="text-xl font-bold cursor-pointer"
-                @click="goToSong(currentMusic.currentSong.id)"
-            >
-              {{ currentMusic.currentSong.title || '未知歌曲' }}
-            </div>
-            <div
-                class="text-base text-gray-300 cursor-pointer"
-                @click="goToArtist(currentMusic.currentSong.artist.id)"
-            >
-              {{ currentMusic.currentSong.artist.name || '未知歌手' }}
-            </div>
-          </div>
 
-          <!-- 歌词 -->
+
+
+        <!-- 歌曲标题 & 歌手 -->
+        <div class="text-center mt-4">
           <div
-              ref="lyricsRef"
-              class="mt-4 overflow-y-auto scrollbar-hide w-full max-w-xl h-[464px] px-4 text-center"
-              @scroll="onScroll"
+              class="text-xl font-bold cursor-pointer"
+              @click="goToSong(currentMusic.currentSong.id)"
           >
-            <div
-                v-for="(line, index) in lyrics"
-                :key="index"
-                :class="[
-                'py-1 transition-all:duration-2s',
-                { 'font-bold text-cyan-300 active': activeIndexes.includes(index) }
-              ]"
-                style="cursor: pointer; user-select: none;"
-                @dblclick="onSheetClick(line.time)"
-            >
-              {{ line.text }}
-            </div>
+            {{ currentMusic.currentSong.title || '未知歌曲' }}
           </div>
-
-          <!-- 进度条 -->
-          <div class="flex items-center justify-center gap-4 mt-6">
-            <span class="text-sm">{{ formatTime(sliderTime) || '00:00' }}</span>
-            <input
-                v-if="currentMusic.currentSong.id"
-                v-model="sliderTime"
-                :max="audioRef.duration"
-                class="range range-xs range-accent w-72"
-                min="0"
-                type="range"
-                @change="currentMusic.play()"
-                @input="currentMusic.pause(); audioRef.currentTime = sliderTime"
-            />
-            <span v-if="currentMusic.currentSong.id" class="text-sm">{{ formatTime(audioRef.duration) || '00:00' }}</span>
-          </div>
-
-          <!-- 控制按钮 -->
-          <div class="flex items-center justify-center gap-4 mt-4 flex-wrap">
-            <button class="btn btn-sm btn-ghost text-white" @click="toggleRepeat">
-              <i class="mdi mdi-repeat text-xl"></i>
-            </button>
-            <button class="btn btn-sm btn-ghost text-white" @click="currentMusic.previousSong">
-              <i class="mdi mdi-skip-previous text-xl"></i>
-            </button>
-            <button class="btn btn-sm btn-ghost text-white" @click="playPause">
-              <i :class="currentMusic.isPlaying ? 'mdi mdi-pause' : 'mdi mdi-play'" class="text-xl"></i>
-            </button>
-            <button class="btn btn-sm btn-ghost text-white" @click="currentMusic.nextSong">
-              <i class="mdi mdi-skip-next text-xl"></i>
-            </button>
-            <!-- 播放列表按钮 -->
-            <div class="dropdown dropdown-top">
-              <label class="btn btn-sm btn-ghost text-white" tabindex="0">
-                <i class="mdi mdi-playlist-music text-xl"></i>
-              </label>
-              <ul class="dropdown-content menu p-2 shadow bg-black/60 backdrop-blur-md rounded-box w-64 text-white max-h-80 overflow-y-auto"
-                  tabindex="0">
-                <li v-for="thisSong in currentMusic.currentPlaylist" :key="thisSong.id">
-                  <div class="flex justify-between items-center">
-                <span
-                    :class="{ 'font-bold text-cyan-300': thisSong.id === currentMusic.currentSong.id }"
-                    @click="currentMusic.setCurrentSong(currentMusic.currentPlaylist.findIndex(song => song.id === thisSong.id))"
-                >
-                  {{ thisSong.title }} - {{ thisSong.artist.name }}
-                </span>
-                    <button
-                        @click="currentMusic.deleteSongFromPlaylist(currentMusic.currentPlaylist.findIndex(song => song.id === thisSong.id))">
-                      <i class="mdi mdi-close text-sm"></i>
-                    </button>
-                  </div>
-                </li>
-              </ul>
-            </div>
-
-            <!-- 音量控制 -->
-            <div class="dropdown dropdown-top">
-              <label class="btn btn-sm btn-ghost text-white" tabindex="0">
-                <i class="mdi mdi-volume-high text-xl"></i>
-              </label>
-              <div class="dropdown-content bg-black/60 backdrop-blur-md rounded-lg p-2 flex justify-center items-center h-36 w-12"
-                   tabindex="0">
-                <input
-                    v-if="currentMusic.currentSong.id"
-                    v-model="audioRef.volume"
-                    class="range range-accent range-vertical h-full"
-                    max="1"
-                    min="0"
-                    step="0.01"
-                    type="range"
-                />
-              </div>
-            </div>
-
-            <!-- 更多按钮 -->
-            <button class="btn btn-sm btn-ghost text-white">
-              <i class="mdi mdi-dots-vertical text-xl"></i>
-            </button>
+          <div
+              class="text-base text-gray-300 cursor-pointer"
+              @click="goToArtist(currentMusic.currentSong.artist.id)"
+          >
+            {{ currentMusic.currentSong.artist.name || '未知歌手' }}
           </div>
         </div>
       </div>
-    </dialog>
+
+
+      <div class="flex flex-col items-center justify-center h-full  z-10">
+        <!-- 歌词 -->
+        <div
+            ref="lyricsRef"
+            class="mt-4 overflow-y-auto scrollbar-hide w-full max-w-xl h-[420px] px-4 text-center"
+            @scroll="onScroll"
+        >
+          <div
+              v-for="(line, index) in lyrics"
+              :key="index"
+              :class="[
+        'py-2 text-lg leading-relaxed transition-all duration-500',
+        { 'font-bold text-cyan-300 active': activeIndexes.includes(index) }
+      ]"
+              style="cursor: pointer; user-select: none;"
+              @dblclick="onSheetClick(line.time)"
+          >
+            {{ line.text }}
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </transition>
+  <Transition name="slide">
+    <div
+        v-show="showPlaylist"
+        class="fixed top-16 right-0 w-1/4 h-[82%] z-[120]"
+        style="pointer-events: none;"
+    >
+      <div class="w-full h-full box-border p-5" style="background: transparent;">
+        <div
+            class="relative w-full h-full bg-base-200 rounded-lg shadow-lg"
+            style="pointer-events: auto;"
+        >
+          <!-- 播放列表内容组件 -->
+          <play-list class="h-full mb-5" />
+
+          <div
+              class="pointer-events-none absolute bottom-0 left-0 w-full h-16 bg-gradient-to-t from-base-200 to-transparent"
+          ></div>
+
+          <!-- 清空按钮 -->
+          <button
+              class="absolute bottom-4 right-5 z-10 btn text-white hover:bg-base-300"
+              @click="handleClearAndClose"
+          >
+            <TrashIcon class="w-6 h-6" />
+          </button>
+        </div>
+      </div>
+    </div>
+  </Transition>
+
+
+
+
+
 
 
 
 </template>
 
 <style scoped>
+/* 加在 <style scoped> 或全局 CSS 中 */
+.slide-enter-from {
+  transform: translateX(100%);
+}
+.slide-enter-to {
+  transform: translateX(0);
+}
+.slide-leave-from {
+  transform: translateX(0);
+}
+.slide-leave-to {
+  transform: translateX(100%);
+}
+.slide-enter-active,
+.slide-leave-active {
+  transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+
 @keyframes bounce {
   0%, 100% {
     transform: scaleY(1);
@@ -476,6 +535,98 @@ onMounted(async () => {
 .scrollbar-hide {
   -ms-overflow-style: none; /* IE and Edge */
   scrollbar-width: none; /* Firefox */
+}
+
+
+
+/* 可写在全局 style.css 或 scoped style 内 */
+.slide-up-enter-active,
+.slide-up-leave-active {
+  transition: transform 0.3s ease;
+}
+.slide-up-enter-from,
+.slide-up-leave-to {
+  transform: translateY(100%);
+}
+.slide-up-enter-to,
+.slide-up-leave-from {
+  transform: translateY(0%);
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+.rotate-album {
+  animation: spin 20s linear infinite;
+  /* 20秒一圈，线性匀速，无限循环 */
+}
+.album-wrapper {
+  position: relative;
+  width: 16rem; /* 64 x 4 = 256px */
+  height: 16rem;
+  border-radius: 50%;
+  background: radial-gradient(circle at center, #111 40%, #000 100%);
+  box-shadow:
+      inset 0 0 15px #222,
+      0 0 30px rgba(0,0,0,0.8);
+  overflow: hidden;
+  animation: spin 20s linear infinite;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 转盘旋转 */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* 封面图稍微缩小点，留点边框显示“黑胶盘” */
+.album-disc {
+  width: 12rem;
+  height: 12rem;
+  border-radius: 50%;
+  box-shadow:
+      inset 0 0 15px rgba(255,255,255,0.1),
+      0 4px 6px rgba(0,0,0,0.3);
+  transition: box-shadow 0.3s;
+  /* 让唱片图跟转盘一起转 */
+  animation: spin 20s linear infinite;
+}
+
+/* 中心轴心小圆 */
+.album-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 2rem;
+  height: 2rem;
+  background: radial-gradient(circle, #ccc 40%, #555 100%);
+  border-radius: 50%;
+  box-shadow:
+      inset 0 0 4px #999,
+      0 1px 3px rgba(0,0,0,0.5);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+/* 光泽效果（可选） */
+.album-wrapper::before {
+  content: "";
+  position: absolute;
+  top: 10%;
+  left: 20%;
+  width: 60%;
+  height: 60%;
+  background: radial-gradient(ellipse at center, rgba(255,255,255,0.15) 0%, transparent 80%);
+  border-radius: 50%;
+  pointer-events: none;
 }
 
 

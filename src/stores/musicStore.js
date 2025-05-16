@@ -10,7 +10,9 @@ export const useMusicStore = defineStore('music', () => {
     const isPlaying = ref(false);
 
     const setCurrentPlayList = (playlist) => {
-        currentPlaylist.value = playlist
+
+        currentPlaylist.value = [...playlist];
+
     }
     const setCurrentSong = (index) => {
         currentSongIndex.value = index;
@@ -37,6 +39,9 @@ export const useMusicStore = defineStore('music', () => {
         }
     }
 
+    const clearPlaylist = () => {
+        currentPlaylist.value = [];
+    }
     const deleteSongFromPlaylist = (index) => {
         currentPlaylist.value.splice(index, 1);
         if (currentSongIndex.value >= currentPlaylist.value.length) {
@@ -88,5 +93,6 @@ export const useMusicStore = defineStore('music', () => {
       play,
       pause,
       isPlaying,
+      clearPlaylist
     }
 });

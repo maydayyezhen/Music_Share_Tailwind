@@ -7,4 +7,7 @@
     "lemonade", "night", "coffee", "winter", "dim", "nord", "sunset",
     "caramellatte", "abyss", "silk"
 }
+@plugin 'tailwind-scrollbar' {
+    nocompatible: true;
+}
 

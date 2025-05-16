@@ -49,11 +49,15 @@ async function handleSubmit() {
   <div class="hero bg-base-200 min-h-screen" style="background-image: url('https://images.unsplash.com/photo-1471478331149-c72f17e33c73?q=80&w=2669&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D')">
     <div class="hero-content flex-col lg:flex-row">
       <div class="text-center lg:text-left">
-        <h1 class="text-5xl font-bold">加入我们，开始音乐旅程！</h1>
-        <p class="py-6">
-          创建账户，发现更多你喜爱的音乐，尽情畅享音乐世界。
-        </p>
-      </div>
+      <h1 class="text-5xl font-extrabold tracking-wide text-white uppercase drop-shadow-md">
+        加入我们，开始音乐旅程！
+      </h1>
+      <p class="py-6 text-white tracking-wide drop-shadow-sm">
+        创建账户，发现更多你喜爱的音乐，尽情畅享音乐世界。
+      </p>
+    </div>
+
+
 
 
       <!-- 右边表单卡片 -->

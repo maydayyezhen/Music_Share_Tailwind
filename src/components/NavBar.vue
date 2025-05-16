@@ -33,6 +33,8 @@ function createAvatarUrl() {
   return `data:image/svg+xml;base64,${base64}`;
 }
 
+defineEmits(['toggle-sidebar'])
+
 const themes = [
   { name: "light", label: "亮色" },
   { name: "dark", label: "暗色" },
@@ -78,52 +80,16 @@ const themes = [
 </script>
 
 <template>
-  <div class="navbar bg-base-100">
+  <div class="navbar bg-transparent select-none">
+    <!-- 左上角按钮 -->
     <div class="navbar-start">
-      <div class="dropdown">
-        <div tabindex="0" role="button" class="btn btn-ghost lg:hidden">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"> <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h8m-8 6h16" /> </svg>
-        </div>
-        <ul
-            tabindex="0"
-            class="menu menu-sm dropdown-content bg-base-100 rounded-box z-1 mt-3 w-52 p-2 shadow">
-          <li><a>Item 1</a></li>
-          <li>
-            <a>Parent</a>
-            <ul class="p-2">
-              <li><a>Submenu 1</a></li>
-              <li><a>Submenu 2</a></li>
-            </ul>
-          </li>
-          <li><a>Item 3</a></li>
-        </ul>
-      </div>
-      <a class="btn btn-ghost text-2xl items-center gap-3 tracking-wider" style="font-family: 'Lobster', cursive;">
+      <!-- Drawer Toggle 按钮 -->
+      <label for="sidebar-drawer" class=" flex text-2xl items-center gap-3 tracking-wider cursor-pointer fixed top-4 left-4 z-[99999]" style="font-family: 'Lobster', cursive;" @click="$emit('toggle-sidebar')">
         <svg class="w-7 h-7" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-          <path d="M15 1H4V9H3C1.34315 9 0 10.3431 0 12C0 13.6569 1.34315 15 3 15C4.65685 15 6 13.6569 6 12V5H13V9H12C10.3431 9 9 10.3431 9 12C9 13.6569 10.3431 15 12 15C13.6569 15 15 13.6569 15 12V1Z"/>
+          <path d="M15 1H4V9H3C1.34315 9 0 10.3431 0 12C0 13.6569 1.34315 15 3 15C4.65685 15 6 13.6569 6 12V5H13V9H12C10.3431 9 9 10.3431 9 12C9 13.6569 10.3431 15 12 15C13.6569 15 15 13.6569 15 12V1Z" />
         </svg>
         MusicShare
-      </a>
-
-
-
-
-
-    </div>
-    <div class="navbar-center hidden lg:flex">
-      <ul class="menu menu-horizontal px-1">
-        <li><a>推荐</a></li>
-        <li><a @click="router.push('/music_db')">曲库</a></li>
-        <li><a @click="router.push('/music_manage')">艺人管理</a></li>
-        <li><a @click="router.push('/album_manage')">专辑管理</a></li>
-        <li><a @click="router.push('/song_manage')">歌曲管理</a></li>
-        <li><a>排行榜</a></li>
-        <li><a>分类歌单</a></li>
-        <li><a>电台</a></li>
-        <li><a>MV</a></li>
-        <li><a>数字专辑</a></li>
-        <li><a @click="router.push('/user_likes')">我的收藏</a></li>
-      </ul>
+      </label>
     </div>
 
 
@@ -217,7 +183,7 @@ const themes = [
 
 
       <div class="dropdown dropdown-end">
-        <div tabindex="0" role="button" class="btn btn-ghost btn-circle avatar">
+        <div tabindex="0" role="button" class="btn btn-ghost btn-circle avatar mr-4">
           <div class="w-10 rounded-full">
             <img v-if="authStore.isLoggedIn"
                 alt="用户头像"

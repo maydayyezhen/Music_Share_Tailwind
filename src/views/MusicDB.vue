@@ -55,7 +55,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="flex justify-center">
+  <div class="flex justify-center mt-16">
     <div class="flex flex-col justify-center w-[90%] gap-10">
       <div class="w-full">
         <CarouselDisplay
