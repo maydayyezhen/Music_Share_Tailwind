@@ -10,7 +10,7 @@ import {
   apiUpdateAlbum,
   apiUploadCoverFile
 } from "@/api/album-api.js";
-import {apiGetAllArtists, apiGetArtistAvatarFile} from "@/api/artist-api.js";
+import {apiGetAllArtists, apiGetArtistAvatar} from "@/api/artist-api.js";
 import Alerts from "@/components/Alerts.vue";
 
 const alertsRef = ref(null)
@@ -23,7 +23,7 @@ const getAllArtists = async () => {
   artists.value = response.data;
   // 并行加载头像
   await Promise.all(artists.value.map(async (artist) => {
-    artist.avatar = await apiGetArtistAvatarFile(artist.avatarUrl);
+    artist.avatar = await apiGetArtistAvatar(artist.avatarUrl);
   }))
 }
 
@@ -39,7 +39,7 @@ const getAlbums = async (page=0, size=5,keyword='',sortByField='id',sortOrderDir
   // 并行加载封面和头像
   await Promise.all(albums.value.content.map(async (album) => {
     album.cover = await apiGetCover(album.coverUrl);
-    album.artist.avatar = await apiGetArtistAvatarFile(album.artist.avatarUrl);
+    album.artist.avatar = await apiGetArtistAvatar(album.artist.avatarUrl);
   }));
 }
 
@@ -62,7 +62,7 @@ async function handleUpdateDataAndUploadFiles({ updatedRow, files }) {
     const updatedAlbum = await apiGetAlbumById(updatedRow.id);
     // 更新图片
     updatedAlbum.cover = await apiGetCover(updatedAlbum.coverUrl);
-    updatedAlbum.artist.avatar = await apiGetArtistAvatarFile(updatedAlbum.artist.avatarUrl);
+    updatedAlbum.artist.avatar = await apiGetArtistAvatar(updatedAlbum.artist.avatarUrl);
     const index = albums.value.content.findIndex(album => album.id === updatedAlbum.id);
     if (index !== -1) {
       albums.value[index] = updatedAlbum;
@@ -93,7 +93,7 @@ async function handleAddDataAndUploadFiles({ newRow, files, onSuccess}) {
     const newAlbum = await apiGetAlbumById(id);
     // 更新图片
     newAlbum.cover = await apiGetCover(newAlbum.coverUrl);
-    newAlbum.artist.avatar = await apiGetArtistAvatarFile(newAlbum.artist.avatarUrl);
+    newAlbum.artist.avatar = await apiGetArtistAvatar(newAlbum.artist.avatarUrl);
     albums.value.content.push(newAlbum);
     triggerToast('success', '更新成功')
     onSuccess();

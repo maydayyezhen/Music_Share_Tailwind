@@ -74,14 +74,15 @@ export const apiDeleteAvatarFileById = (name) => {
     return axios.delete(`/users/${name}/avatarFile`);
 };
 
-// 文件操作
-// 获取头像URL
-export const apiGetUserAvatarFileUrl = async (fileUrl) => {
+
+export const apiGetUserAvatarFile = async (fileUrl) => {
     const res = await axios.get(fileUrl, {
         responseType: 'blob',
     })
     return URL.createObjectURL(res.data)
 };
+
+
 
 // 更新角色
 export const apiUpdateRole = (name, updateName, role) => {

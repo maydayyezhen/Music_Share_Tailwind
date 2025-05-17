@@ -1,10 +1,9 @@
 <script setup>
 import {ref, watch} from "vue";
-import {apiGetArtistAvatarFile} from "@/api/artist-api.js";
+import {apiGetArtistAvatar} from "@/api/artist-api.js";
 import {useAuthStore} from "@/stores/authStore.js";
 import { createAvatar } from '@dicebear/core';
 import {thumbs} from '@dicebear/collection';
-import router from "@/router/index.js";
 import {useSidebarStore} from "@/stores/sidebarStore.js";
 
 const userAvatarUrl = ref('');
@@ -13,7 +12,7 @@ watch(
     () => authStore.user,
     async (newUser) => {
       if (newUser.avatarUrl) {
-        userAvatarUrl.value = await apiGetArtistAvatarFile(newUser.avatarUrl);
+        userAvatarUrl.value = await apiGetArtistAvatar(newUser.avatarUrl);
       } else {
         userAvatarUrl.value = createAvatarUrl();
       }
@@ -80,9 +79,13 @@ const themes = [
 </script>
 
 <template>
-  <div class="navbar bg-transparent select-none">
+  <div class="navbar bg-transparent select-none"
+       style="pointer-events: none;"
+  >
     <!-- 左上角按钮 -->
-    <div class="navbar-start">
+    <div class="navbar-start"
+         style="pointer-events: auto;"
+    >
       <!-- Drawer Toggle 按钮 -->
       <label for="sidebar-drawer" class=" flex text-2xl items-center gap-3 tracking-wider cursor-pointer fixed top-4 left-4 z-[99999]" style="font-family: 'Lobster', cursive;" @click="useSidebarStore().toggleSidebar()">
         <svg class="w-7 h-7" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
@@ -94,7 +97,9 @@ const themes = [
 
 
 
-    <div class="navbar-end space-x-2">
+    <div class="navbar-end space-x-2"
+         style="pointer-events: auto;"
+    >
       <button class="btn btn-ghost btn-circle">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"> <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /> </svg>
       </button>
@@ -207,6 +212,7 @@ const themes = [
       </div>
     </div>
   </div>
+
 </template>
 
 <style scoped>

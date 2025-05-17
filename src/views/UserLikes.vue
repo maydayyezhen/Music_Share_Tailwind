@@ -6,7 +6,7 @@ import {apiGetAudio, apiGetLyric, apiGetSongById} from "@/api/song-api.js";
 import {apiGetAlbumById} from "@/api/album-api.js";
 import SongList from "@/components/SongList.vue";
 
-const userLikeStore = useUserLikeStore()
+
 const tabs = [
   { key: 'songs', label: '歌曲' },
   { key: 'songLists', label: '歌单' },
@@ -17,6 +17,7 @@ const activeTab = ref('songs');
 const changeTab = (key) => {
   activeTab.value = key;
 }
+const userLikeStore = useUserLikeStore()
 const songs = ref([]);
 const albums = ref([]);
 

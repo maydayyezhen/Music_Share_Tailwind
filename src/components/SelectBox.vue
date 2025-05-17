@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { apiGetAllArtists, apiGetArtistAvatarFile } from '@/api/artist-api.js'
+import { apiGetAllArtists, apiGetArtistAvatar } from '@/api/artist-api.js'
 
 // 数据和状态
 const artists = ref([])            // 存储所有歌手数据
@@ -14,7 +14,7 @@ const getAllArtists = async () => {
 
   // 获取每个歌手的头像
   for (const artist of artists.value) {
-    artist.avatar = await apiGetArtistAvatarFile(artist.avatarUrl)
+    artist.avatar = await apiGetArtistAvatar(artist.avatarUrl)
   }
 
   // 如果有歌手，默认选择第一个

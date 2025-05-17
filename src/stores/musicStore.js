@@ -1,6 +1,8 @@
 import { defineStore } from 'pinia';
 import {nextTick, ref} from 'vue';
 import {Song} from "@/models/song.js";
+import {apiGetAudio} from "@/api/song-api.js";
+import {apiGetCover} from "@/api/album-api.js";
 
 export const useMusicStore = defineStore('music', () => {
     const currentSongIndex = ref(0);
@@ -14,9 +16,12 @@ export const useMusicStore = defineStore('music', () => {
         currentPlaylist.value = [...playlist];
 
     }
-    const setCurrentSong = (index) => {
+    const setCurrentSong = async (index) => {
         currentSongIndex.value = index;
         currentSong.value = currentPlaylist.value[index];
+        if(!currentSong.value.album.cover)
+            currentSong.value.album.cover = await apiGetCover(currentSong.value.album.coverUrl);
+        currentSong.value.audio = await apiGetAudio(currentSong.value.audioUrl);
         play();
     }
 
@@ -58,28 +63,31 @@ export const useMusicStore = defineStore('music', () => {
         }
     }
 
-    const nextSong = () => {
+    const nextSong = async () => {
         if (currentSongIndex.value < currentPlaylist.value.length - 1) {
             currentSongIndex.value++;
             currentSong.value = currentPlaylist.value[currentSongIndex.value];
-        }
-        else
-        {
+        } else {
             currentSongIndex.value = 0;
             currentSong.value = currentPlaylist.value[0];
         }
+        debugger
+        if(!currentSong.value.album.cover)
+            currentSong.value.album.cover = await apiGetCover(currentSong.value.album.coverUrl);
+        currentSong.value.audio = await apiGetAudio(currentSong.value.audioUrl);
         play();
     }
-    const previousSong = () => {
+    const previousSong = async () => {
         if (currentSongIndex.value > 0) {
             currentSongIndex.value--;
             currentSong.value = currentPlaylist.value[currentSongIndex.value];
-        }
-        else
-        {
+        } else {
             currentSongIndex.value = currentPlaylist.value.length - 1;
             currentSong.value = currentPlaylist.value[currentSongIndex.value];
         }
+        if(!currentSong.value.album.cover)
+            currentSong.value.album.cover = await apiGetCover(currentSong.value.album.coverUrl);
+        currentSong.value.audio = await apiGetAudio(currentSong.value.audioUrl);
         play();
     }
     return {

@@ -1,9 +1,10 @@
 <script setup>
 import {useMusicStore} from "@/stores/musicStore.js";
 import {PauseIcon, PlayIcon, XMarkIcon} from "@heroicons/vue/24/solid/index.js";
-import {nextTick, ref, watch} from "vue";
+import {nextTick, onMounted, ref, watch} from "vue";
 import router from "@/router/index.js";
 import PlayingBarsIcon from "@/components/icons/PlayingBarsIcon.vue";
+import {apiGetCover} from "@/api/album-api.js";
 
 const musicStore = useMusicStore();
 const togglePlayPause = (index,id) => {
@@ -26,10 +27,26 @@ watch(() => musicStore.currentSongIndex, async (newIndex) => {
     el.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 })
+
+async function loadCover(song) {
+  const src = song.album.coverUrl;
+  if (src) {
+    song.album.cover = await apiGetCover(src);
+  }
+}
+const display= ref(false);
+onMounted(() => {display.value = true;})
+watch(() => musicStore.currentPlaylist, async () => {
+  display.value = false;
+  await nextTick();
+  display.value = true;
+});
+
+
 </script>
 
 <template>
-  <div class="p-2 select-none">
+  <div class="p-2 select-none" v-if="display">
     <h6 class="ml-3 mt-2 mb-4 text-lg  uppercase tracking-widest">播放列表</h6>
     <div
         class="flex flex-col gap-2 px-1 pb-20 scrollbar scrollbar-thumb-base-content scrollbar-track-transparent overflow-auto max-h-[calc(100%-3rem)]"
@@ -63,11 +80,12 @@ watch(() => musicStore.currentSongIndex, async (newIndex) => {
 
         <!-- 左侧封面 -->
           <div class="flex items-center gap-3 overflow-hidden">
-            <div class="relative w-12 h-12">
+            <div class="relative w-12 h-12"  v-lazy-img="() => !song.album.cover && loadCover(song)">
               <img
                   v-if="song.album.cover"
                   :src="song.album.cover"
                   class="h-full w-full rounded-lg object-cover"
+                  :class="{ 'brightness-50': musicStore.currentSong.id === song.id }"
               />
               <div v-else class="skeleton w-full h-full"></div>
 
@@ -92,7 +110,7 @@ watch(() => musicStore.currentSongIndex, async (newIndex) => {
                   v-if="musicStore.currentSong?.id === song.id && musicStore.isPlaying"
                   class="absolute bottom-1 right-1 z-10"
               >
-                <PlayingBarsIcon class="w-4 h-4 animate-pulse text-primary" />
+                <PlayingBarsIcon class="w-4 h-4 animate-pulse text-white" />
               </div>
             </div>
 

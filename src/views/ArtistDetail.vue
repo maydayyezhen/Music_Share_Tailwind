@@ -1,7 +1,7 @@
 <script setup>
 import {onMounted, ref, watch} from 'vue'
 import{Artist} from "@/models/artist.js";
-import {apiGetArtistAvatarFile, apiGetArtistById} from "@/api/artist-api.js";
+import {apiGetArtistAvatar, apiGetArtistById} from "@/api/artist-api.js";
 import {useRoute} from "vue-router";
 import {apiGetAlbumsByArtistId} from "@/api/album-api.js";
 import {apiGetSongsByArtistId} from "@/api/song-api.js";
@@ -23,14 +23,12 @@ const artist = ref({...Artist})
 
 const getArtistById = async (artistId) => {
   isPageReady.value = false;
-  // 第一步：并发获取 artist 基本信息、专辑、歌曲
   const [artistResponse, albums, songs] = await Promise.all([
     apiGetArtistById(artistId),
     apiGetAlbumsByArtistId(artistId),
     apiGetSongsByArtistId(artistId)
   ]);
 
-  // 绑定 artist 对象
   artist.value = artistResponse;
   artist.value.songs = songs;
   popularSongs.value = [...artist.value.songs]
@@ -38,43 +36,14 @@ const getArtistById = async (artistId) => {
       .slice(0, 5);
   artist.value.albums = albums;
 
-  // 第二步：并发获取 avatar、专辑封面、歌曲音频
-  const avatarPromise = apiGetArtistAvatarFile(artist.value.avatarUrl);
+  const avatarPromise = apiGetArtistAvatar(artist.value.avatarUrl);
 
-  const albumCoverPromises = artist.value.albums.map(album =>
-      apiGetArtistAvatarFile(album.coverUrl)
-  );
-
-  const songAudioPromises = artist.value.songs.map(song =>
-      apiGetArtistAvatarFile(song.audioUrl)
-  );
-
-  const [avatar, albumCovers, songAudios] = await Promise.all([
+  const [avatar] = await Promise.all([
     avatarPromise,
-    Promise.all(albumCoverPromises),
-    Promise.all(songAudioPromises)
   ]);
 
-  // 设置 artist 头像
   artist.value.avatar = avatar;
 
-  // 设置每张专辑的封面
-  artist.value.albums.forEach((album, index) => {
-    album.cover = albumCovers[index];
-  });
-
-  // 设置每首歌曲的音频地址
-  artist.value.songs.forEach((song, index) => {
-    song.audio = songAudios[index];
-  });
-
-  // 第三步：为每首歌补上专辑封面引用（避免冗余加载）
-  for (let song of artist.value.songs) {
-    const matchedAlbum = artist.value.albums.find(album => album.id === song.album.id);
-    if (matchedAlbum) {
-      song.album.cover = matchedAlbum.cover;
-    }
-  }
   isPageReady.value = true;
 };
 

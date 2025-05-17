@@ -66,7 +66,7 @@ const sidebarItems = [
   { label: '分类歌单', icon: ListMusic },
   { label: '电台', icon: Radio },
   { label: 'MV', icon: Clapperboard },
-  { label: '我的收藏', icon: Heart, route: '/user_likes' }
+  { label: '我的收藏', icon: Heart, route: '/profile_center' }
 ]
 </script>
 
@@ -84,7 +84,7 @@ const sidebarItems = [
             @click="item.route && navigate(item.route)"
             :class="[
             'rounded cursor-pointer transition-colors duration-200 w-full',
-            isActive(item) ? 'bg-primary text-primary-content font-semibold' : 'hover:bg-base-300'
+            isActive(item) ? 'bg-white/30 text-primary-content font-semibold' : 'hover:bg-base-300'
           ]"
         >
           <a class="flex items-center gap-3 w-full block px-3 py-2">
