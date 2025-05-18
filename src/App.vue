@@ -61,12 +61,14 @@ const sidebarItems = [
   { label: '曲库', icon: Library, route: '/music_db' },
   { label: '艺人管理', icon: Users, route: '/music_manage' },
   { label: '专辑管理', icon: DiscAlbum, route: '/album_manage' },
-  { label: '歌曲管理', icon: Music, route: '/song_manage' },
+    { label: '歌曲管理', icon: Music, route: '/song_manage' },
+    { label: '歌单管理', icon: Music, route: '/playlist_manage' },
+  { label: '用户管理', icon: Users, route: '/user_manage' },
   { label: '排行榜', icon: BarChart },
   { label: '分类歌单', icon: ListMusic },
   { label: '电台', icon: Radio },
   { label: 'MV', icon: Clapperboard },
-  { label: '我的收藏', icon: Heart, route: '/profile_center' }
+  { label: '我的收藏', icon: Heart, route: '/user_likes' }
 ]
 </script>
 
@@ -84,7 +86,7 @@ const sidebarItems = [
             @click="item.route && navigate(item.route)"
             :class="[
             'rounded cursor-pointer transition-colors duration-200 w-full',
-            isActive(item) ? 'bg-white/30 text-primary-content font-semibold' : 'hover:bg-base-300'
+            isActive(item) ? 'bg-primary text-primary-content font-semibold' : 'hover:bg-base-300'
           ]"
         >
           <a class="flex items-center gap-3 w-full block px-3 py-2">
