@@ -214,8 +214,14 @@
                         </button>
                     </div>
 
+                    <!-- 加载状态 -->
+                    <div v-if="loadingSongs" class="text-center py-4">
+                        <span class="loading loading-spinner loading-lg"></span>
+                        <p>正在加载歌曲...</p>
+                    </div>
+
                     <!-- 歌曲列表 -->
-                    <div class="overflow-x-auto">
+                    <div v-else class="overflow-x-auto">
                         <table class="table w-full">
                             <thead>
                                 <tr>
@@ -227,25 +233,20 @@
                             </thead>
                             <tbody>
                                 <tr v-for="song in currentPlaylist.songDetails" :key="song.id">
-                                    <td>
-                                        <div class="avatar">
-                                            <div class="w-12 h-12 rounded">
-                                                <img :src="song.cover || '/default-song-cover.jpg'"
-                                                     :alt="song.title" />
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td>{{ song.title }}</td>
-                                    <td>{{ song.artist || '未知' }}</td>
+                                    <td>{{ song.title || '未知歌曲' }}</td>
+                                    <td>{{ song.artist || '未知艺术家' }}</td>
                                     <td>
                                         <button @click="removeSongFromPlaylist(song.id)"
                                                 class="btn btn-sm btn-error">
-                                            <i class="fas fa-trash"></i>
+                                            <i class="fas fa-trash"></i> 移除
                                         </button>
                                     </td>
                                 </tr>
                                 <tr v-if="currentPlaylist.songDetails.length === 0">
-                                    <td colspan="4" class="text-center py-4">暂无歌曲</td>
+                                    <td colspan="4" class="text-center py-4">
+                                        <i class="fas fa-music text-4xl opacity-20 mb-2"></i>
+                                        <p class="text-lg opacity-70">暂无歌曲，请添加歌曲到歌单</p>
+                                    </td>
                                 </tr>
                             </tbody>
                         </table>
@@ -256,7 +257,7 @@
                 </div>
             </div>
         </div>
-    </div>
+        </div>
 </template>
 
 <script setup>
@@ -272,7 +273,8 @@
         apiLikePlaylist,
         apiGetPlaylistCover,
         apiGetPlaylistById,
-        
+        apiGetSongsByPlaylistId,
+
     } from '@/api/playlist-api';
     import {
         apiGetAllSongs
@@ -312,12 +314,6 @@
         return Array.from({ length: totalPages }, (_, i) => i + 1);
     });
 
-    const availableSongs = computed(() => {
-        if (!currentPlaylist.value) return allSongs.value;
-        return allSongs.value.filter(song =>
-            !currentPlaylist.value.songs.includes(song.id)
-        );
-    });
 
     // 生命周期钩子
     onMounted(() => {
@@ -459,52 +455,102 @@
         }
     };
 
-    const openManageSongsModal = (playlist) => {
-        currentPlaylist.value = { ...playlist };
-        showManageSongsModal.value = true;
+    const loadingSongs = ref(false);
+
+    // 修改后的 openManageSongsModal 方法
+    const openManageSongsModal = async (playlist) => {
+        try {
+            loadingSongs.value = true;
+            showManageSongsModal.value = true;
+
+            // 1. 获取歌单基本信息
+            const playlistResponse = await apiGetPlaylistById(playlist.id);
+            currentPlaylist.value = playlistResponse.data;
+
+            // 2. 从API获取歌单的歌曲列表
+            const songsResponse = await apiGetSongsByPlaylistId(playlist.id);
+
+            // 3. 更新歌曲详情
+            currentPlaylist.value.songDetails = songsResponse.data.map(song => ({
+                ...song,
+                cover: song.coverUrl || '/default-song-cover.jpg'
+            }));
+
+            // 4. 更新歌单的歌曲ID列表
+            currentPlaylist.value.songs = currentPlaylist.value.songDetails.map(song => song.id);
+
+        } catch (error) {
+            console.error('打开管理歌曲模态框失败:', error);
+            currentPlaylist.value = {
+                ...playlist,
+                songs: [],
+                songDetails: []
+            };
+        } finally {
+            loadingSongs.value = false;
+        }
     };
 
+    // 修改后的 availableSongs 计算属性
+    const availableSongs = computed(() => {
+        if (!currentPlaylist.value || !allSongs.value.length) return allSongs.value;
+
+        // 获取当前歌单已有的歌曲ID
+        const playlistSongIds = new Set(
+            Array.isArray(currentPlaylist.value.songs)
+                ? currentPlaylist.value.songs
+                : []
+        );
+
+        // 过滤出不在歌单中的歌曲
+        return allSongs.value.filter(song => !playlistSongIds.has(song.id));
+    });
+
+    // 修改后的 addSongToPlaylist 方法
     const addSongToPlaylist = async () => {
         try {
+            if (!selectedSongToAdd.value || !currentPlaylist.value) return;
+
+            loadingSongs.value = true;
             await apiAddSongToPlaylist(
                 currentPlaylist.value.id,
                 selectedSongToAdd.value
             );
 
-            // 刷新当前播放列表数据
-            const updatedPlaylist = await apiGetPlaylistById(currentPlaylist.value.id);
-            currentPlaylist.value = updatedPlaylist.data;
-
-            // 更新歌曲详情
-            if (currentPlaylist.value.songs && Array.isArray(currentPlaylist.value.songs)) {
-                currentPlaylist.value.songDetails = currentPlaylist.value.songs.map(songId => {
-                    const song = allSongs.value.find(s => s.id === songId);
-                    return song || {
-                        id: songId,
-                        title: '未知歌曲',
-                        artist: '未知艺术家',
-                        cover: '/default-song-cover.jpg'
-                    };
-                });
-            }
+            // 重新获取更新后的歌曲列表
+            const songsResponse = await apiGetSongsByPlaylistId(currentPlaylist.value.id);
+            currentPlaylist.value.songDetails = songsResponse.data.map(song => ({
+                ...song,
+                cover: song.coverUrl || '/default-song-cover.jpg'
+            }));
+            currentPlaylist.value.songs = currentPlaylist.value.songDetails.map(song => song.id);
 
             selectedSongToAdd.value = '';
         } catch (error) {
             console.error('添加歌曲失败:', error);
+        } finally {
+            loadingSongs.value = false;
         }
     };
 
+    // 修改后的 removeSongFromPlaylist 方法
     const removeSongFromPlaylist = async (songId) => {
         try {
+            loadingSongs.value = true;
             await apiRemoveSongFromPlaylist(currentPlaylist.value.id, songId);
 
-            // 更新本地数据
-            currentPlaylist.value.songs = currentPlaylist.value.songs.filter(id => id !== songId);
-            currentPlaylist.value.songDetails = currentPlaylist.value.songDetails.filter(
-                song => song.id !== songId
-            );
+            // 重新获取更新后的歌曲列表
+            const songsResponse = await apiGetSongsByPlaylistId(currentPlaylist.value.id);
+            currentPlaylist.value.songDetails = songsResponse.data.map(song => ({
+                ...song,
+                cover: song.coverUrl || '/default-song-cover.jpg'
+            }));
+            currentPlaylist.value.songs = currentPlaylist.value.songDetails.map(song => song.id);
+
         } catch (error) {
             console.error('移除歌曲失败:', error);
+        } finally {
+            loadingSongs.value = false;
         }
     };
 
