@@ -1,5 +1,7 @@
 <script setup>
 import { useRouter } from 'vue-router'
+import {apiGetCover} from "@/api/album-api.js";
+import {apiGetArtistAvatar} from "@/api/artist-api.js";
 const props = defineProps({
   artist: Object,
   imageSize: {
@@ -12,10 +14,15 @@ const props = defineProps({
   }
 })
 
+const artist = props.artist;
 const router = useRouter()
 
 function goToArtist() {
   router.push(`/artist_detail/${props.artist.id}`)
+}
+
+async function loadAvatar() {
+  artist.avatar = await apiGetArtistAvatar(artist.avatarUrl)
 }
 
 </script>
@@ -23,15 +30,16 @@ function goToArtist() {
 
 <template>
   <div :class="`flex flex-col`">
-    <div v-if="artist.avatar" class="relative group hover:-translate-y-1 transform transition duration-300  cursor-pointer">
+    <div class="relative group hover:-translate-y-1 transform transition duration-300  cursor-pointer" v-lazy-img="loadAvatar">
       <img
+          v-if="artist.avatar"
           :src="artist.avatar"
           alt="歌手头像"
           :class="`${imageSize} object-cover rounded-full duration-300 group-hover:shadow-lg group-hover:brightness-50`"
           @click="goToArtist"
       />
+      <div v-else :class="`${imageSize} skeleton rounded-full`"></div>
     </div>
-    <div v-else :class="`${imageSize} skeleton rounded-lg`"></div>
     <div :class="titleClass"  class="max-w-[10rem] truncate" :title="artist.name">{{ artist.name }}</div>
   </div>
 </template>

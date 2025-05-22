@@ -9,7 +9,8 @@ import SongDetail from "@/views/SongDetail.vue";
 import AlbumDetail from "@/views/AlbumDetail.vue";
 import ArtistDetail from "@/views/ArtistDetail.vue";
 import UserLikes from "@/views/UserLikes.vue";
-
+import UserManage from "@/views/UserManage.vue";
+import PlaylistManage from "@/views/PlaylistManage.vue";
 
 const routes = [
     { path: '/', component: Login },
@@ -23,6 +24,8 @@ const routes = [
     { path: '/album_detail/:id', component: AlbumDetail },
     { path: '/artist_detail/:id', component: ArtistDetail },
     { path: '/user_likes', component: UserLikes },
+    { path: '/user_manage', component: UserManage },
+    { path: '/playlist_manage', component: PlaylistManage },
 ]
 
 const router = createRouter({
@@ -31,3 +34,4 @@ const router = createRouter({
 })
 
 export default router;
+

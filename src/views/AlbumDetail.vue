@@ -4,28 +4,25 @@ import {useRoute} from 'vue-router'
 import {Album} from "@/models/album.js"
 import {Song} from "@/models/song.js"
 import {apiGetAlbumById, apiGetAlbumsByArtistId, apiGetCover} from "@/api/album-api.js"
-import {apiGetAudio, apiGetLyric, apiGetSongsByAlbumId} from "@/api/song-api.js"
+import {apiGetSongsByAlbumId} from "@/api/song-api.js"
 import SongList from "@/components/SongList.vue"
 import {useMusicStore} from "@/stores/musicStore.js";
-import AlbumCards from "@/components/AlbumCards.vue";
 import {useUserLikeStore} from "@/stores/userLikeStore.js";
 import { HeartIcon as HeartSolidIcon } from '@heroicons/vue/24/solid'
 import { HeartIcon as HeartOutlineIcon } from '@heroicons/vue/24/outline'
-import { PlayIcon, EllipsisHorizontalIcon } from '@heroicons/vue/24/solid'
+import { PlayIcon} from '@heroicons/vue/24/solid'
 import {
   InformationCircleIcon,
   MusicalNoteIcon,
   ChatBubbleLeftEllipsisIcon,
-  PlayCircleIcon,
-  RectangleStackIcon,
-  StarIcon
+
 } from "@heroicons/vue/24/outline/index.js";
-import formatDuration from "../Tools/Time.js";
+import {formatDuration} from "../Tools/tools.js";
 import CarouselDisplay from "@/components/CarouselDisplay.vue";
 import AlbumCard from "@/components/AlbumCard.vue";
 import ImagePreview from "@/components/ImagePreview.vue";
 import {useSidebarStore} from "@/stores/sidebarStore.js";
-import {apiGetArtistAvatarFile} from "@/api/artist-api.js";
+import {apiGetArtistAvatar} from "@/api/artist-api.js";
 import router from "@/router/index.js";
 
 const route = useRoute()
@@ -38,7 +35,7 @@ const getAlbumById = async (id) => {
   album.value = await apiGetAlbumById(id)
   album.value.cover = await apiGetCover(album.value.coverUrl);
   album.value.duration = 0;
-  album.value.artist.avatar = await apiGetArtistAvatarFile(album.value.artist.avatarUrl);
+  album.value.artist.avatar = await apiGetArtistAvatar(album.value.artist.avatarUrl);
 }
 
 const getSongsByAlbumId = async (albumId) => {
@@ -48,20 +45,6 @@ const getSongsByAlbumId = async (albumId) => {
     for (let i = 0; i < songs.value.length; i++) {
       const song = songs.value[i];
       song.album = album.value;
-
-      try {
-        song.audio = await apiGetAudio(song.audioUrl);
-      } catch (e) {
-        console.error(`加载音频失败: ${song.audioUrl}`, e);
-        song.audio = null;
-      }
-
-      try {
-        song.lyric = await apiGetLyric(song.lyricUrl);
-      } catch (e) {
-        console.error(`加载歌词失败: ${song.lyricUrl}`, e);
-        song.lyric = null;
-      }
     }
     album.value.duration = songs.value.reduce(
         (sum, song) => sum + (song.duration || 0),
@@ -128,8 +111,10 @@ watch(() => route.params.id, (newId) => {
 
 
 function playAllSongs() {
-  musicStore.setCurrentPlayList(songs.value);
-  musicStore.setCurrentSong(0);
+  if(songs.value.length > 0) {
+    musicStore.setCurrentPlayList(songs.value);
+    musicStore.setCurrentSong(0);
+  }
 }
 
 </script>

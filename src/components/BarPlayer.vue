@@ -2,12 +2,13 @@
 import {useMusicStore} from "@/stores/musicStore.js";
 import {apiGetLyric} from "@/api/song-api.js";
 import { onMounted, ref, watch} from "vue";
-import { ForwardIcon ,ChevronDownIcon,Bars3Icon,SpeakerWaveIcon,TrashIcon,HeartIcon,BackwardIcon,PlayIcon, PauseIcon ,EllipsisHorizontalIcon} from '@heroicons/vue/24/solid'
-import { HeartIcon as HeartIconOutline } from "@heroicons/vue/24/outline";
+import { ForwardIcon ,ChevronDownIcon,Bars3Icon,SpeakerWaveIcon,TrashIcon,HeartIcon,BackwardIcon,PlayIcon, PauseIcon ,EllipsisHorizontalIcon } from '@heroicons/vue/24/solid'
+import { HeartIcon as HeartIconOutline ,ChatBubbleLeftEllipsisIcon} from "@heroicons/vue/24/outline";
 import {useUserLikeStore} from "@/stores/userLikeStore.js";
 import {useRouter} from "vue-router";
 import PlayList from "@/components/PlayList.vue";
 import {FastAverageColor} from "fast-average-color";
+import SongComment from "@/components/CommentSection.vue";
 
 const currentMusic = useMusicStore();
 
@@ -155,11 +156,7 @@ function handleClearAndClose() {
   }, 100);
 }
 
-const showPlaylist = ref(false);
 
-function togglePlaylist() {
-  showPlaylist.value = !showPlaylist.value;
-}
 
 
 const audioRef = ref(null);
@@ -170,7 +167,6 @@ watch(() => currentMusic.currentSong, async () => {
 
 // 提取颜色并生成渐变背景
 const gradientBackground = ref('linear-gradient(to bottom, #222, #000)')
-const hiddenImage = ref(null)
 
 watch(() => currentMusic.currentSong.album.cover, (url) => {
   if (!url) return
@@ -191,6 +187,21 @@ onMounted(async () => {
     audioRef.value.addEventListener('ended', currentMusic.nextSong)
   }
 })
+const showPlaylist = ref(false);
+
+function togglePlaylist() {
+  if(!showPlaylist.value&&showComment.value) {
+    showComment.value = false;
+  }
+  showPlaylist.value = !showPlaylist.value;
+}
+const showComment = ref(false);
+function toggleComment() {
+  if (!showComment.value&&showPlaylist.value) {
+    showPlaylist.value = false;
+  }
+  showComment.value = !showComment.value;
+}
 
 </script>
 
@@ -207,16 +218,19 @@ onMounted(async () => {
       <div class="flex gap-4 items-center">
         <div class="relative group flex justify-center items-center">
           <!-- 封面图 -->
+
           <img
+              v-if="currentMusic.currentSong.album.cover"
               :src="currentMusic.currentSong.album.cover"
               alt=""
               class="size-16 rounded-xl transition duration-300"
           />
+          <div v-else class="skeleton size-16 rounded-xl"></div>
 
           <!-- 悬浮显示的按钮 -->
           <button
               class="absolute w-full h-full size-16 rounded-xl flex justify-center items-center opacity-0 group-hover:opacity-100 bg-black/50 transition-opacity duration-200  cursor-pointer"
-              @click="onClickToggleButton"
+              @click="toggleComment"
           >
             <ChevronDownIcon
                 :class="['transition-transform duration-300', { 'rotate-180': showPlayer }]"
@@ -239,8 +253,14 @@ onMounted(async () => {
               <HeartIconOutline v-if="!useUserLikeStore().isLiked(currentMusic.currentSong.id,'song')" class="w-5 h-5"></HeartIconOutline>
               <HeartIcon v-else class="text-error w-5 h-5"></HeartIcon>
             </button>
-            <!-- 更多按钮 -->
-            <EllipsisHorizontalIcon class="w-5 h-5 cursor-pointer hover:brightness-75"/>
+            <button
+                class="transition-transform duration-300 mr-6 cursor-pointer hover:brightness-75"
+                @click="toggleComment"
+            >
+              <ChatBubbleLeftEllipsisIcon
+                  class="h-5 w-5"
+              />
+            </button>
           </div>
 
           <!-- 艺术家名 -->
@@ -405,10 +425,12 @@ onMounted(async () => {
 
           <div class="album-wrapper cursor-pointer" @click="goToAlbum(currentMusic.currentSong.album.id)">
             <img
+                v-if="currentMusic.currentSong.album.cover"
                 :src="currentMusic.currentSong.album.cover"
                 alt="歌曲封面"
                 class="w-100 h-100 object-cover rounded-lg border border-white/13"
             />
+            <div v-else class="skeleton w-100 h-100 object-cover rounded-lg"></div>
 
           </div>
 
@@ -498,6 +520,28 @@ onMounted(async () => {
           >
             <TrashIcon class="w-6 h-6" />
           </button>
+        </div>
+      </div>
+    </div>
+  </Transition>
+
+  <Transition name="slide">
+    <div
+        v-if="showComment"
+        class="fixed top-16 right-0 w-1/4 h-[82%] z-[120]"
+        style="pointer-events: none;"
+    >
+      <div class="w-full h-full box-border p-5" style="background: transparent;">
+        <div
+            class="relative w-full h-full bg-base-200 rounded-lg shadow-lg"
+            style="pointer-events: auto;"
+        >
+          <SongComment class="h-full"  :content-id="currentMusic.currentSong.id" content-type="song"/>
+          <!-- 播放列表内容组件 -->
+
+          <div
+              class="pointer-events-none absolute bottom-0 left-0 w-full h-16 bg-gradient-to-t from-base-200 to-transparent"
+          ></div>
         </div>
       </div>
     </div>

@@ -5,7 +5,7 @@ import {onMounted, ref} from "vue";
 import {
   apiCreateArtist,
   apiDeleteArtistById,
-  apiGetArtistAvatarFile,
+  apiGetArtistAvatar,
   apiGetArtistById,
   apiGetArtists,
   apiUpdateArtist,
@@ -28,7 +28,7 @@ async function getArtists(page=0, size=5,keyword='',sortByField='id',sortOrderDi
   artists.value = await apiGetArtists(page, size, keyword, sortByField, sortOrderDirection);
   // 并行加载头像
   await Promise.all(artists.value.content.map(async (artist) => {
-    artist.avatar = await apiGetArtistAvatarFile(artist.avatarUrl);
+    artist.avatar = await apiGetArtistAvatar(artist.avatarUrl);
   }))
 }
 
@@ -50,7 +50,7 @@ async function handleUpdateDataAndUploadFiles({ updatedRow, files }) {
     // 获取更新后的数据
     const updatedArtist = (await apiGetArtistById(updatedRow.id)).data;
     // 更新图片
-    updatedArtist.avatar = await apiGetArtistAvatarFile(updatedArtist.avatarUrl);
+    updatedArtist.avatar = await apiGetArtistAvatar(updatedArtist.avatarUrl);
     const index = artists.value.content.findIndex(artist => artist.id === updatedArtist.id);
     if (index !== -1) {
       artists.value.content[index] = updatedArtist;
@@ -80,7 +80,7 @@ async function handleAddDataAndUploadFiles({ newRow, files, onSuccess}) {
     // 获取更新后的数据
     const newArtist = await apiGetArtistById(id);
     // 更新图片
-    newArtist.avatar = await apiGetArtistAvatarFile(newArtist.avatarUrl);
+    newArtist.avatar = await apiGetArtistAvatar(newArtist.avatarUrl);
     artists.value.content.push(newArtist);
     triggerToast('success', '更新成功')
     onSuccess();
