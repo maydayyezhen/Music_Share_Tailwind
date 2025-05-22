@@ -1,5 +1,11 @@
 <template>
     <div class="container mx-auto px-4 py-8">
+        <audio ref="audioRef"
+               :src="currentPlayingSong?.audioUrl"
+               @ended="handleAudioEnded"
+               @pause="isPlaying = false"
+               @play="isPlaying = true"
+               class="hidden" />
         <div class="flex justify-between items-center mb-8">
             <h1 class="text-3xl font-bold">播放列表管理</h1>
             <button @click="console.log('Button clicked'); showCreateModal = true"
@@ -21,7 +27,6 @@
                 <div class="form-control">
                     <select v-model="sortBy" @change="fetchPlaylists" class="select select-bordered">
                         <option value="name">按名称</option>
-                        <option value="createdAt">按创建时间</option>
                         <option value="likeCount">按点赞数</option>
                     </select>
                 </div>
@@ -67,19 +72,37 @@
                                 <button @click="openEditModal(playlist)"
                                         class="btn btn-sm btn-outline">
                                     <i class="fas fa-edit"></i>
+                                    编辑信息
                                 </button>
                                 <button @click="openManageSongsModal(playlist)"
                                         class="btn btn-sm btn-outline">
                                     <i class="fas fa-music"></i>
+                                    管理歌曲
                                 </button>
                                 <button @click="likePlaylist(playlist.id)"
                                         class="btn btn-sm btn-outline"
                                         :class="{ 'btn-primary': playlist.liked }">
                                     <i class="fas fa-thumbs-up"></i>
+                                    点赞
                                 </button>
                                 <button @click="confirmDeletePlaylist(playlist.id)"
                                         class="btn btn-sm btn-error">
                                     <i class="fas fa-trash"></i>
+                                    删除
+                                </button>
+                                <button @click="playPlaylist(playlist)"
+                                        class="btn btn-sm btn-circle btn-ghost"
+                                        :class="{ 'btn-primary': currentPlaylistPlaying?.id === playlist.id && isPlaying }">
+                                    <svg v-if="!(currentPlaylistPlaying?.id === playlist.id && isPlaying)"
+                                         class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+                                         fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M6 3L20 12 6 21V3z"></path>
+                                    </svg>
+                                    <svg v-else
+                                         class="size-[1.6em]" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+                                         fill="currentColor">
+                                        <path d="M8 5h2.5v14H8V5zm5.5 0H16v14h-2.5V5z" />
+                                    </svg>
                                 </button>
                             </div>
                         </td>
@@ -139,6 +162,7 @@
                         创建
                     </button>
                     <button @click="showCreateModal = false" class="btn">取消</button>
+                    
                 </div>
             </div>
         </div>
@@ -204,7 +228,7 @@
                             <option v-for="song in availableSongs"
                                     :key="song.id"
                                     :value="song.id">
-                                {{ song.title }} - {{ song.artist }}
+                                {{ song.title }}-{{ song.artist.name }}
                             </option>
                         </select>
                         <button @click="addSongToPlaylist"
@@ -225,23 +249,27 @@
                         <table class="table w-full">
                             <thead>
                                 <tr>
-                                    <th>封面</th>
                                     <th>歌曲名称</th>
-                                    <th>艺术家</th>
+                                    <th>歌手</th>
                                     <th>操作</th>
+                                    <th></th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr v-for="song in currentPlaylist.songDetails" :key="song.id">
                                     <td>{{ song.title || '未知歌曲' }}</td>
-                                    <td>{{ song.artist || '未知艺术家' }}</td>
+                                    <td>{{ song.artist.name || '未知歌手' }}</td>
                                     <td>
                                         <button @click="removeSongFromPlaylist(song.id)"
                                                 class="btn btn-sm btn-error">
                                             <i class="fas fa-trash"></i> 移除
                                         </button>
                                     </td>
+                                    <td>
+                                        <MiniAudioPlayer></MiniAudioPlayer>
+                                    </td>
                                 </tr>
+                            
                                 <tr v-if="currentPlaylist.songDetails.length === 0">
                                     <td colspan="4" class="text-center py-4">
                                         <i class="fas fa-music text-4xl opacity-20 mb-2"></i>
@@ -257,11 +285,11 @@
                 </div>
             </div>
         </div>
-        </div>
+    </div>
 </template>
 
 <script setup>
-    import { ref, computed, onMounted } from 'vue';
+    import { ref, computed, onMounted ,nextTick } from 'vue';
     import {
         apiGetPagedPlaylists,
         apiCreatePlaylist,
@@ -299,6 +327,12 @@
     const currentEditPlaylist = ref(null);
     const currentPlaylist = ref(null);
     const selectedSongToAdd = ref('');
+
+    // 播放相关状态
+    const audioRef = ref(null);
+    const currentPlayingSong = ref(null);
+    const isPlaying = ref(false);
+    const currentPlaylistPlaying = ref(null);
 
     // 新歌单表单
     const newPlaylist = ref({
@@ -457,26 +491,25 @@
 
     const loadingSongs = ref(false);
 
-    // 修改后的 openManageSongsModal 方法
+
     const openManageSongsModal = async (playlist) => {
         try {
             loadingSongs.value = true;
             showManageSongsModal.value = true;
 
-            // 1. 获取歌单基本信息
+
             const playlistResponse = await apiGetPlaylistById(playlist.id);
             currentPlaylist.value = playlistResponse.data;
 
-            // 2. 从API获取歌单的歌曲列表
+
             const songsResponse = await apiGetSongsByPlaylistId(playlist.id);
 
-            // 3. 更新歌曲详情
+
             currentPlaylist.value.songDetails = songsResponse.data.map(song => ({
                 ...song,
                 cover: song.coverUrl || '/default-song-cover.jpg'
             }));
 
-            // 4. 更新歌单的歌曲ID列表
             currentPlaylist.value.songs = currentPlaylist.value.songDetails.map(song => song.id);
 
         } catch (error) {
@@ -491,22 +524,22 @@
         }
     };
 
-    // 修改后的 availableSongs 计算属性
+
     const availableSongs = computed(() => {
         if (!currentPlaylist.value || !allSongs.value.length) return allSongs.value;
 
-        // 获取当前歌单已有的歌曲ID
+
         const playlistSongIds = new Set(
             Array.isArray(currentPlaylist.value.songs)
                 ? currentPlaylist.value.songs
                 : []
         );
 
-        // 过滤出不在歌单中的歌曲
+
         return allSongs.value.filter(song => !playlistSongIds.has(song.id));
     });
 
-    // 修改后的 addSongToPlaylist 方法
+
     const addSongToPlaylist = async () => {
         try {
             if (!selectedSongToAdd.value || !currentPlaylist.value) return;
@@ -517,7 +550,7 @@
                 selectedSongToAdd.value
             );
 
-            // 重新获取更新后的歌曲列表
+
             const songsResponse = await apiGetSongsByPlaylistId(currentPlaylist.value.id);
             currentPlaylist.value.songDetails = songsResponse.data.map(song => ({
                 ...song,
@@ -533,13 +566,13 @@
         }
     };
 
-    // 修改后的 removeSongFromPlaylist 方法
+
     const removeSongFromPlaylist = async (songId) => {
         try {
             loadingSongs.value = true;
             await apiRemoveSongFromPlaylist(currentPlaylist.value.id, songId);
 
-            // 重新获取更新后的歌曲列表
+
             const songsResponse = await apiGetSongsByPlaylistId(currentPlaylist.value.id);
             currentPlaylist.value.songDetails = songsResponse.data.map(song => ({
                 ...song,
@@ -577,6 +610,68 @@
             console.error('删除播放列表失败:', error);
         }
     };
+    // 播放控制方法
+    const togglePlayback = (song = null) => {
+        if (song) {
+            // 播放单个歌曲
+            if (currentPlayingSong.value?.id === song.id && audioRef.value) {
+                if (isPlaying.value) {
+                    audioRef.value.pause();
+                } else {
+                    audioRef.value.play();
+                }
+            } else {
+                currentPlayingSong.value = song;
+                isPlaying.value = true;
+                // 使用nextTick确保audio元素已更新
+                nextTick(() => {
+                    audioRef.value.play();
+                });
+            }
+        }
+    };
+
+    const playPlaylist = (playlist) => {
+        if (!playlist.songDetails || playlist.songDetails.length === 0) return;
+
+        currentPlaylistPlaying.value = playlist;
+
+        // 如果当前播放的是这个歌单的第一首歌且正在播放，则暂停
+        if (currentPlayingSong.value?.id === playlist.songDetails[0].id && isPlaying.value) {
+            audioRef.value.pause();
+            return;
+        }
+
+        // 否则从第一首开始播放
+        currentPlayingSong.value = playlist.songDetails[0];
+        isPlaying.value = true;
+        nextTick(() => {
+            audioRef.value.play();
+        });
+    };
+
+    // 监听音频结束事件
+    const handleAudioEnded = () => {
+        if (currentPlaylistPlaying.value) {
+            const currentIndex = currentPlaylistPlaying.value.songDetails.findIndex(
+                song => song.id === currentPlayingSong.value.id
+            );
+
+            if (currentIndex < currentPlaylistPlaying.value.songDetails.length - 1) {
+                // 播放下一首
+                currentPlayingSong.value = currentPlaylistPlaying.value.songDetails[currentIndex + 1];
+                nextTick(() => {
+                    audioRef.value.play();
+                });
+            } else {
+                // 歌单播放结束
+                isPlaying.value = false;
+                currentPlaylistPlaying.value = null;
+            }
+        } else {
+            isPlaying.value = false;
+        }
+    };
 
     const resetNewPlaylistForm = () => {
         newPlaylist.value = {
@@ -588,7 +683,7 @@
 </script>
 
 <style scoped>
-    /* 自定义样式 */
+
     .modal-box {
         max-height: calc(100vh - 100px);
         overflow-y: auto;
