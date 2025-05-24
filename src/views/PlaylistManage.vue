@@ -3,7 +3,6 @@
         <div class="flex justify-between items-center mb-8">
         </div>
 
-        
         <!-- 播放列表表格 -->
         <MyTable :modelValue="playlists.content"
                  :columns="columns"
@@ -43,7 +42,6 @@
                                     <th>歌曲名称</th>
                                     <th>歌手</th>
                                     <th>操作</th>
-                                    <th></th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -55,11 +53,7 @@
                                             <i class="fas fa-trash"></i> 移除
                                         </button>
                                     </td>
-                                    <td>
-                                        <!-- 使用 MiniAudioPlayer 组件 -->
-                                        <MiniAudioPlayer :src="song.audioUrl" @ended="handleAudioEnded" @pause="handlePause" @play="isPlaying = true" />
-                                        <span v-if="!song.audioUrl" class="text-gray-400 text-sm ml-2">无音频</span>
-                                    </td>
+
                                 </tr>
                                 <tr>
                                     <td colspan="4" class="text-center py-4">
@@ -80,7 +74,7 @@
 </template>
 
 <script setup>
-    import { ref, computed, onMounted, nextTick } from 'vue';
+    import { ref, computed, onMounted } from 'vue';
     import {
         apiGetPagedPlaylists,
         apiCreatePlaylist,
@@ -89,7 +83,6 @@
         apiUploadPlaylistCover,
         apiAddSongToPlaylist,
         apiRemoveSongFromPlaylist,
-        apiLikePlaylist,
         apiGetPlaylistCover,
         apiGetPlaylistById,
         apiGetSongsByPlaylistId
@@ -97,7 +90,6 @@
     import { apiGetAllSongs } from '@/api/song-api';
     import { useAuthStore } from '@/stores/authStore';
     import MyTable from '@/components/MyTable.vue';
-    import MiniAudioPlayer from '@/components/MiniAudioPlayer.vue';
     import { Play } from 'lucide-vue-next';
 
     const authStore = useAuthStore();
@@ -117,9 +109,6 @@
     // 模态框状态
     const showManageSongsModal = ref(false);
 
-    // 播放相关状态
-    const currentPlayingSong = ref(null);
-    const isPlaying = ref(false);
 
     // 新歌单表单
     const newPlaylist = ref({
@@ -162,18 +151,8 @@
             handler: (playlist) => {
                 openManageSongsModal(playlist);
             }
-        },
-        {
-            name: 'play',
-            label: '播放',
-            class: "btn btn-ghost btn-xs",
-            handler: (playlist) => {
-                if (playlist.songDetails?.length > 0) {
-                    // 这里可以考虑直接使用 MiniAudioPlayer 播放第一首歌
-                    currentPlayingSong.value = playlist.songDetails[0];
-                }
-            }
         }
+
     ];
 
     function triggerToast(alertType, alertMessage) {
@@ -427,23 +406,6 @@
         fetchPlaylists();
     };
 
-    // 播放控制方法
-    const handlePlay = (song) => {
-        if (!song.audioUrl) {
-            console.warn('歌曲没有音频文件');
-            return;
-        }
-        currentPlayingSong.value = song;
-    };
-
-    const handlePause = () => {
-        isPlaying.value = false;
-    };
-
-    const handleAudioEnded = () => {
-        isPlaying.value = false;
-        currentPlayingSong.value = null;
-    };
 </script>
 
 <style scoped>
