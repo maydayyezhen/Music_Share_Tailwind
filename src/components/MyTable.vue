@@ -292,14 +292,9 @@
         if (index !== -1) props.modelValue.splice(index, 1);
     }
 
-    // 删除功能
     async function confirmDelete() {
         emit('delete', editingRow.value.id);
         cancelEdit();
     }
 
-    // 分页
-    function handlePageChange(page) {
-        emit('page-change', page);
-    }
 </script>
