@@ -144,8 +144,11 @@
         },
         {
             key: 'description',
-            label: '描述',
-            sortable: true
+            label: '简介',
+            displayComponent: 'editor',
+            editComponent: 'editor',
+            buttonText: '简介',
+            title: '简介'
         },
     ];
 
