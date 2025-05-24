@@ -73,6 +73,9 @@ export const apiRemoveSongFromPlaylist = (playlistId, songId) => {
 export const apiGetPlaylistCover = async (fileUrl) => {
     const res = await axios.get(fileUrl, {
         responseType: 'blob',
+        headers: {
+            'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+        }
     });
     return URL.createObjectURL(res.data);
 };
