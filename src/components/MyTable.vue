@@ -128,7 +128,6 @@
                 </tr>
             </tfoot>
         </table>
-        <Pagination v-if="pagination" :pagination="pagination" @page-change="handlePageChange" />
 
         <!-- 删除确认模态框 -->
         <input type="checkbox" id="delete_modal" class="modal-toggle" />
